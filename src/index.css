@@ -406,4 +406,14 @@
     font-variant-numeric: tabular-nums;
     letter-spacing: 0.05em;
   }
+
+  /* Item ticker animation */
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .animate-ticker {
+    animation: ticker 30s linear infinite;
+  }
 }
