@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        mono: ["'Share Tech Mono'", "monospace"],
+        mono: ["'JetBrains Mono'", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -54,12 +54,18 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        agent: {
+          pessimist: "hsl(var(--agent-pessimist))",
+          hypeman: "hsl(var(--agent-hypeman))",
+          judge: "hsl(var(--agent-judge))",
+        },
         hud: {
           grid: "hsl(var(--hud-grid))",
           scan: "hsl(var(--hud-scan))",
           box: "hsl(var(--hud-box))",
           price: "hsl(var(--hud-price))",
           damaged: "hsl(var(--hud-damaged))",
+          consensus: "hsl(var(--hud-consensus))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
