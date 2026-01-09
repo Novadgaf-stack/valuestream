@@ -39,7 +39,7 @@ For each object you identify:
 2. Estimate its current second-hand market value in USD
 3. Note if it appears damaged (cracked screen, dents, wear) and reduce value accordingly
 4. Provide a confidence score (0.0 to 1.0) for your identification
-5. Estimate where in the image the object is located as x,y percentages (0-100)
+5. Provide a BOUNDING BOX as [x, y, width, height] in percentages (0-100) of the image dimensions
 
 IGNORE: walls, floors, ceilings, curtains, and structural elements.
 FOCUS ON: electronics, furniture, appliances, collectibles, jewelry, clothing, books, art, and other items with resale value.
@@ -51,11 +51,17 @@ Return ONLY a valid JSON object in this exact format with no additional text:
       "object": "Item Name",
       "value": 850,
       "confidence": 0.92,
-      "coordinates": [45, 30],
+      "bbox": [25, 30, 15, 20],
       "damaged": false
     }
   ]
 }
+
+The bbox array is [x_percent, y_percent, width_percent, height_percent] where:
+- x_percent: horizontal position from left edge (0-100)
+- y_percent: vertical position from top edge (0-100)
+- width_percent: box width as percentage of image width (0-100)
+- height_percent: box height as percentage of image height (0-100)
 
 If no valuable objects are detected, return: {"objects": []}`;
 
@@ -74,7 +80,7 @@ If no valuable objects are detected, return: {"objects": []}`;
           {
             role: "user",
             content: [
-              { type: "text", text: "Analyze this image." },
+              { type: "text", text: "Analyze this image and provide bounding boxes for each valuable object." },
               {
                 type: "image_url",
                 image_url: { url: `data:image/jpeg;base64,${image}` },
@@ -88,6 +94,8 @@ If no valuable objects are detected, return: {"objects": []}`;
     if (!response.ok) {
       const errorText = await response.text();
       console.error("AI gateway error:", response.status, errorText);
+      
+      // Return structured error for backoff handling
       return new Response(
         JSON.stringify({ error: "AI gateway error", status: response.status, details: errorText }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }

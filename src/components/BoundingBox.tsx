@@ -5,6 +5,8 @@ interface DetectedObject {
   confidence: number;
   x: number;
   y: number;
+  w: number;
+  h: number;
   isDamaged?: boolean;
 }
 
@@ -15,11 +17,17 @@ interface BoundingBoxProps {
 }
 
 const BoundingBox = ({ item, containerWidth, containerHeight }: BoundingBoxProps) => {
-  // Calculate position based on percentages
-  const boxWidth = 120;
-  const boxHeight = 80;
-  const x = (item.x / 100) * containerWidth - boxWidth / 2;
-  const y = (item.y / 100) * containerHeight - boxHeight / 2;
+  // Calculate position and size based on percentages
+  const x = (item.x / 100) * containerWidth;
+  const y = (item.y / 100) * containerHeight;
+  const width = (item.w / 100) * containerWidth;
+  const height = (item.h / 100) * containerHeight;
+
+  // Clamp to screen bounds
+  const clampedX = Math.max(0, Math.min(x, containerWidth - width));
+  const clampedY = Math.max(80, Math.min(y, containerHeight - height - 40));
+  const clampedW = Math.min(width, containerWidth - clampedX);
+  const clampedH = Math.min(height, containerHeight - clampedY);
 
   const boxColor = item.isDamaged ? "hsl(var(--hud-damaged))" : "hsl(var(--hud-box))";
   const textColor = item.isDamaged ? "text-warning" : "text-primary";
@@ -28,54 +36,59 @@ const BoundingBox = ({ item, containerWidth, containerHeight }: BoundingBoxProps
     <div
       className="absolute pointer-events-none"
       style={{
-        left: Math.max(10, Math.min(x, containerWidth - boxWidth - 10)),
-        top: Math.max(80, Math.min(y, containerHeight - boxHeight - 10)),
-        width: boxWidth,
-        height: boxHeight,
+        left: clampedX,
+        top: clampedY,
+        width: clampedW,
+        height: clampedH,
       }}
     >
-      {/* Bounding box corners */}
+      {/* Full bounding box with corners */}
       <svg className="absolute inset-0 w-full h-full overflow-visible">
-        {/* Top left */}
+        {/* Full border (subtle) */}
+        <rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          fill="none"
+          stroke={boxColor}
+          strokeWidth="1"
+          strokeDasharray="4 4"
+          opacity="0.4"
+        />
+        
+        {/* Corner brackets - Top left */}
         <path
           d="M 0 20 L 0 0 L 20 0"
           fill="none"
           stroke={boxColor}
-          strokeWidth="2"
+          strokeWidth="3"
         />
         {/* Top right */}
         <path
-          d="M 100 0 L 120 0 L 120 20"
+          d={`M ${clampedW - 20} 0 L ${clampedW} 0 L ${clampedW} 20`}
           fill="none"
           stroke={boxColor}
-          strokeWidth="2"
+          strokeWidth="3"
         />
         {/* Bottom left */}
         <path
-          d="M 0 60 L 0 80 L 20 80"
+          d={`M 0 ${clampedH - 20} L 0 ${clampedH} L 20 ${clampedH}`}
           fill="none"
           stroke={boxColor}
-          strokeWidth="2"
+          strokeWidth="3"
         />
         {/* Bottom right */}
         <path
-          d="M 100 80 L 120 80 L 120 60"
+          d={`M ${clampedW - 20} ${clampedH} L ${clampedW} ${clampedH} L ${clampedW} ${clampedH - 20}`}
           fill="none"
           stroke={boxColor}
-          strokeWidth="2"
+          strokeWidth="3"
         />
-        
-        {/* Connecting lines (subtle) */}
-        <line x1="20" y1="0" x2="100" y2="0" stroke={boxColor} strokeWidth="1" strokeDasharray="4 4" opacity="0.3" />
-        <line x1="20" y1="80" x2="100" y2="80" stroke={boxColor} strokeWidth="1" strokeDasharray="4 4" opacity="0.3" />
-        <line x1="0" y1="20" x2="0" y2="60" stroke={boxColor} strokeWidth="1" strokeDasharray="4 4" opacity="0.3" />
-        <line x1="120" y1="20" x2="120" y2="60" stroke={boxColor} strokeWidth="1" strokeDasharray="4 4" opacity="0.3" />
       </svg>
 
       {/* Object label */}
-      <div 
-        className="absolute -top-6 left-0 right-0 text-center"
-      >
+      <div className="absolute -top-6 left-0 right-0 text-center">
         <span className={`text-xs ${textColor} text-glow tracking-wider uppercase bg-background/80 px-2 py-0.5`}>
           {item.object}
         </span>
@@ -84,7 +97,7 @@ const BoundingBox = ({ item, containerWidth, containerHeight }: BoundingBoxProps
       {/* Price tag */}
       <div className="absolute -bottom-8 left-1/2 -translate-x-1/2">
         <div 
-          className="px-3 py-1 text-sm font-bold text-glow-intense"
+          className="px-3 py-1 text-sm font-bold text-glow-intense bg-background/60"
           style={{ 
             color: item.isDamaged ? "hsl(var(--hud-damaged))" : "hsl(var(--hud-price))",
             textShadow: `0 0 10px ${item.isDamaged ? "hsl(var(--hud-damaged))" : "hsl(var(--hud-price))"}`
@@ -95,7 +108,7 @@ const BoundingBox = ({ item, containerWidth, containerHeight }: BoundingBoxProps
       </div>
 
       {/* Confidence indicator */}
-      <div className="absolute -right-16 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+      <div className="absolute -right-14 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-background/60 px-1">
         {Math.round(item.confidence * 100)}%
       </div>
     </div>
