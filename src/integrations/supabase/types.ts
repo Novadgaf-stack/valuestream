@@ -66,11 +66,9 @@ export type Database = {
           id: string
           is_damaged: boolean
           object_name: string
-          report_url: string | null
           session_id: string
           snapshot_data: string | null
           value: number
-          volatility_score: number | null
         }
         Insert: {
           bbox_h?: number
@@ -82,11 +80,9 @@ export type Database = {
           id?: string
           is_damaged?: boolean
           object_name: string
-          report_url?: string | null
           session_id: string
           snapshot_data?: string | null
           value?: number
-          volatility_score?: number | null
         }
         Update: {
           bbox_h?: number
@@ -98,11 +94,9 @@ export type Database = {
           id?: string
           is_damaged?: boolean
           object_name?: string
-          report_url?: string | null
           session_id?: string
           snapshot_data?: string | null
           value?: number
-          volatility_score?: number | null
         }
         Relationships: [
           {

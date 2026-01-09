@@ -2,21 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-/* MarketForce - High-Frequency Trading Terminal Design System */
+/* ValueStream - Cyberpunk Finance HUD Design System */
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
 
 @layer base {
   :root {
-    /* Core Void - Deep Black */
-    --background: 220 15% 4%;
-    --foreground: 0 0% 95%;
+    /* Core Void */
+    --background: 0 0% 0%;
+    --foreground: 180 100% 50%;
 
-    /* Agent Colors */
-    --agent-pessimist: 0 85% 55%;
-    --agent-hypeman: 142 70% 45%;
-    --agent-judge: 45 100% 50%;
-    
     /* Neon Cyan - Primary */
     --primary: 186 100% 50%;
     --primary-foreground: 0 0% 0%;
@@ -27,17 +22,17 @@
     --warning-foreground: 0 0% 0%;
 
     /* Glass surfaces */
-    --card: 220 15% 8%;
-    --card-foreground: 0 0% 95%;
+    --card: 0 0% 5%;
+    --card-foreground: 180 100% 50%;
 
-    --popover: 220 15% 8%;
-    --popover-foreground: 0 0% 95%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 180 100% 50%;
 
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary: 186 50% 10%;
+    --secondary-foreground: 186 100% 50%;
 
-    --muted: 220 10% 20%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 180 30% 60%;
 
     --accent: 186 100% 20%;
     --accent-foreground: 186 100% 50%;
@@ -45,59 +40,58 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 20%;
-    --input: 220 15% 15%;
+    --border: 186 100% 30%;
+    --input: 186 100% 20%;
     --ring: 186 100% 50%;
 
     --radius: 0.25rem;
 
-    /* HUD tokens */
+    /* Custom HUD tokens */
     --hud-grid: 186 100% 50%;
     --hud-scan: 186 100% 60%;
     --hud-box: 186 100% 50%;
-    --hud-price: 45 100% 50%;
-    --hud-damaged: 0 85% 55%;
+    --hud-price: 120 100% 50%;
+    --hud-damaged: 36 100% 50%;
     --hud-glass: 0 0% 100%;
-    --hud-consensus: 142 70% 45%;
 
-    /* Sidebar tokens */
-    --sidebar-background: 220 15% 6%;
-    --sidebar-foreground: 0 0% 95%;
+    /* Sidebar tokens (keeping for compatibility) */
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 180 100% 50%;
     --sidebar-primary: 186 100% 50%;
     --sidebar-primary-foreground: 0 0% 0%;
     --sidebar-accent: 186 100% 15%;
     --sidebar-accent-foreground: 186 100% 50%;
-    --sidebar-border: 220 15% 20%;
+    --sidebar-border: 186 100% 20%;
     --sidebar-ring: 186 100% 50%;
   }
 
   .dark {
-    --background: 220 15% 4%;
-    --foreground: 0 0% 95%;
+    --background: 0 0% 0%;
+    --foreground: 180 100% 50%;
     --primary: 186 100% 50%;
     --primary-foreground: 0 0% 0%;
-    --secondary: 220 15% 15%;
-    --secondary-foreground: 0 0% 95%;
-    --muted: 220 10% 20%;
-    --muted-foreground: 220 10% 60%;
+    --secondary: 186 50% 10%;
+    --secondary-foreground: 186 100% 50%;
+    --muted: 0 0% 10%;
+    --muted-foreground: 180 30% 60%;
     --accent: 186 100% 20%;
     --accent-foreground: 186 100% 50%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 20%;
-    --input: 220 15% 15%;
+    --border: 186 100% 30%;
+    --input: 186 100% 20%;
     --ring: 186 100% 50%;
-    --card: 220 15% 8%;
-    --card-foreground: 0 0% 95%;
-    --popover: 220 15% 8%;
-    --popover-foreground: 0 0% 95%;
-    --sidebar-background: 220 15% 6%;
-    --sidebar-foreground: 0 0% 95%;
+    --card: 0 0% 5%;
+    --card-foreground: 180 100% 50%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 180 100% 50%;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 180 100% 50%;
     --sidebar-primary: 186 100% 50%;
     --sidebar-primary-foreground: 0 0% 0%;
     --sidebar-accent: 186 100% 15%;
     --sidebar-accent-foreground: 186 100% 50%;
-    --sidebar-border: 220 15% 20%;
+    --sidebar-border: 186 100% 20%;
     --sidebar-ring: 186 100% 50%;
   }
 }
@@ -108,22 +102,31 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: 'JetBrains Mono', monospace;
+    @apply bg-background text-foreground font-mono;
+    font-family: 'Share Tech Mono', monospace;
   }
 }
 
-/* Trading Terminal Animations */
+/* HUD Animations */
 @layer utilities {
-  /* Radar pulse animation */
-  @keyframes radar-pulse {
+  /* Scanning grid animation */
+  @keyframes scan {
     0% {
-      transform: scale(0.8);
-      opacity: 1;
+      transform: translateY(-100%);
     }
     100% {
-      transform: scale(2.5);
-      opacity: 0;
+      transform: translateY(100vh);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      opacity: 1;
+      filter: drop-shadow(0 0 10px hsl(var(--primary)));
+    }
+    50% {
+      opacity: 0.7;
+      filter: drop-shadow(0 0 20px hsl(var(--primary)));
     }
   }
 
@@ -136,132 +139,55 @@
     }
   }
 
-  @keyframes pulse-glow {
-    0%, 100% {
-      opacity: 1;
-      filter: drop-shadow(0 0 10px currentColor);
-    }
-    50% {
-      opacity: 0.7;
-      filter: drop-shadow(0 0 25px currentColor);
-    }
-  }
-
-  @keyframes price-flicker {
-    0%, 100% { opacity: 1; transform: translateY(0); }
-    25% { opacity: 0.8; transform: translateY(-2px); }
-    50% { opacity: 0.9; transform: translateY(1px); }
-    75% { opacity: 0.85; transform: translateY(-1px); }
-  }
-
-  @keyframes price-settle {
-    0% { 
-      filter: brightness(1.5) drop-shadow(0 0 30px hsl(var(--hud-price)));
-      transform: scale(1.1);
-    }
-    100% { 
-      filter: brightness(1) drop-shadow(0 0 15px hsl(var(--hud-price)));
-      transform: scale(1);
-    }
-  }
-
-  @keyframes typewriter-cursor {
+  @keyframes flicker {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+    50% { opacity: 0.8; }
+    25%, 75% { opacity: 0.9; }
   }
 
-  @keyframes scan-line {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(100vh); }
+  @keyframes box-draw {
+    0% {
+      stroke-dashoffset: 1000;
+    }
+    100% {
+      stroke-dashoffset: 0;
+    }
   }
 
-  @keyframes consensus-glow {
+  @keyframes countup-glow {
     0%, 100% {
-      box-shadow: 0 0 20px hsl(var(--hud-consensus) / 0.5),
-                  0 0 40px hsl(var(--hud-consensus) / 0.3),
-                  inset 0 0 20px hsl(var(--hud-consensus) / 0.1);
+      text-shadow: 0 0 10px hsl(var(--primary)), 0 0 20px hsl(var(--primary)), 0 0 30px hsl(var(--primary));
     }
     50% {
-      box-shadow: 0 0 40px hsl(var(--hud-consensus) / 0.7),
-                  0 0 80px hsl(var(--hud-consensus) / 0.5),
-                  inset 0 0 40px hsl(var(--hud-consensus) / 0.2);
+      text-shadow: 0 0 20px hsl(var(--primary)), 0 0 40px hsl(var(--primary)), 0 0 60px hsl(var(--primary));
     }
   }
 
-  @keyframes data-stream {
-    0% { background-position: 0% 0%; }
-    100% { background-position: 0% 100%; }
-  }
-
-  @keyframes grid-pulse {
-    0%, 100% { opacity: 0.05; }
-    50% { opacity: 0.15; }
-  }
-
-  @keyframes scan-vertical {
-    0% { top: -5%; }
-    100% { top: 105%; }
-  }
-
-  @keyframes glitch-shift {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-2px); }
-    50% { transform: translateX(2px); }
-    75% { transform: translateX(-1px); }
-  }
-
-  .animate-radar-pulse {
-    animation: radar-pulse 2s ease-out infinite;
-  }
-
-  .animate-radar-sweep {
-    animation: radar-sweep 3s linear infinite;
+  .animate-scan {
+    animation: scan 3s linear infinite;
   }
 
   .animate-pulse-glow {
     animation: pulse-glow 2s ease-in-out infinite;
   }
 
-  .animate-price-flicker {
-    animation: price-flicker 0.3s ease-in-out infinite;
+  .animate-radar {
+    animation: radar-sweep 2s linear infinite;
   }
 
-  .animate-price-settle {
-    animation: price-settle 0.5s ease-out forwards;
+  .animate-flicker {
+    animation: flicker 0.15s ease-in-out infinite;
   }
 
-  .animate-typewriter-cursor {
-    animation: typewriter-cursor 0.8s step-end infinite;
+  .animate-countup-glow {
+    animation: countup-glow 1.5s ease-in-out infinite;
   }
 
-  .animate-scan-line {
-    animation: scan-line 4s linear infinite;
-  }
-
-  .animate-consensus-glow {
-    animation: consensus-glow 2s ease-in-out infinite;
-  }
-
-  .animate-data-stream {
-    animation: data-stream 20s linear infinite;
-    background-size: 100% 200%;
-  }
-
-  .holo-glitch {
-    animation: glitch-shift 0.15s ease-in-out infinite;
-  }
-
-  /* Glass morphism - trading terminal style */
+  /* Glass morphism */
   .glass {
-    background: hsla(220, 15%, 10%, 0.8);
-    backdrop-filter: blur(20px);
-    border: 1px solid hsla(var(--primary) / 0.2);
-  }
-
-  .glass-dark {
-    background: hsla(220, 15%, 5%, 0.95);
-    backdrop-filter: blur(30px);
-    border: 1px solid hsla(var(--border) / 0.5);
+    background: hsla(var(--hud-glass) / 0.05);
+    backdrop-filter: blur(12px);
+    border: 1px solid hsla(var(--primary) / 0.3);
   }
 
   /* Scanlines overlay */
@@ -273,8 +199,8 @@
       0deg,
       transparent,
       transparent 2px,
-      hsla(0, 0%, 0%, 0.03) 2px,
-      hsla(0, 0%, 0%, 0.03) 4px
+      hsla(0, 0%, 0%, 0.1) 2px,
+      hsla(0, 0%, 0%, 0.1) 4px
     );
     pointer-events: none;
   }
@@ -282,138 +208,22 @@
   /* HUD grid pattern */
   .hud-grid {
     background-image: 
-      linear-gradient(hsla(var(--primary) / 0.05) 1px, transparent 1px),
-      linear-gradient(90deg, hsla(var(--primary) / 0.05) 1px, transparent 1px);
-    background-size: 50px 50px;
+      linear-gradient(hsla(var(--primary) / 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, hsla(var(--primary) / 0.1) 1px, transparent 1px);
+    background-size: 40px 40px;
   }
 
-  /* Data stream background */
-  .data-stream-bg {
-    background: linear-gradient(
-      180deg,
-      transparent 0%,
-      hsla(var(--primary) / 0.03) 25%,
-      hsla(var(--primary) / 0.05) 50%,
-      hsla(var(--primary) / 0.03) 75%,
-      transparent 100%
-    );
-  }
-
-  /* Text effects */
+  /* Text glow effects */
   .text-glow {
     text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
   }
 
   .text-glow-intense {
-    text-shadow: 
-      0 0 10px currentColor, 
-      0 0 20px currentColor, 
-      0 0 40px currentColor;
+    text-shadow: 0 0 10px currentColor, 0 0 20px currentColor, 0 0 40px currentColor, 0 0 80px currentColor;
   }
 
-  .text-glow-gold {
-    text-shadow: 
-      0 0 10px hsl(var(--hud-price)), 
-      0 0 30px hsl(var(--hud-price)), 
-      0 0 50px hsl(var(--hud-price) / 0.5);
-  }
-
-  /* Agent-specific glows */
-  .text-pessimist {
-    color: hsl(var(--agent-pessimist));
-    text-shadow: 0 0 10px hsl(var(--agent-pessimist) / 0.8);
-  }
-
-  .text-hypeman {
-    color: hsl(var(--agent-hypeman));
-    text-shadow: 0 0 10px hsl(var(--agent-hypeman) / 0.8);
-  }
-
-  .text-judge {
-    color: hsl(var(--hud-price));
-    text-shadow: 0 0 15px hsl(var(--hud-price) / 0.8);
-  }
-
-  /* Box effects */
+  /* Box glow */
   .box-glow {
-    box-shadow: 
-      0 0 10px hsla(var(--primary) / 0.5), 
-      inset 0 0 10px hsla(var(--primary) / 0.1);
-  }
-
-  .box-glow-consensus {
-    box-shadow: 
-      0 0 20px hsla(var(--hud-consensus) / 0.6),
-      0 0 40px hsla(var(--hud-consensus) / 0.3),
-      inset 0 0 15px hsla(var(--hud-consensus) / 0.1);
-  }
-
-  .box-glow-warning {
-    box-shadow: 
-      0 0 20px hsla(var(--warning) / 0.6),
-      0 0 40px hsla(var(--warning) / 0.4),
-      inset 0 0 15px hsla(var(--warning) / 0.2);
-  }
-
-  /* Volatility shake animations */
-  @keyframes volatility-shake {
-    0%, 100% { transform: translateX(0); }
-    25% { transform: translateX(-2px) rotate(-0.5deg); }
-    50% { transform: translateX(2px) rotate(0.5deg); }
-    75% { transform: translateX(-1px) rotate(-0.25deg); }
-  }
-
-  @keyframes volatility-shake-intense {
-    0%, 100% { transform: translateX(0) translateY(0); }
-    10% { transform: translateX(-4px) translateY(-1px) rotate(-1deg); }
-    20% { transform: translateX(4px) translateY(1px) rotate(1deg); }
-    30% { transform: translateX(-3px) translateY(-2px) rotate(-0.5deg); }
-    40% { transform: translateX(3px) translateY(2px) rotate(0.5deg); }
-    50% { transform: translateX(-2px) translateY(-1px) rotate(-1deg); }
-    60% { transform: translateX(2px) translateY(1px) rotate(1deg); }
-    70% { transform: translateX(-3px) translateY(0) rotate(-0.5deg); }
-    80% { transform: translateX(3px) translateY(-1px) rotate(0.5deg); }
-    90% { transform: translateX(-1px) translateY(1px) rotate(0deg); }
-  }
-
-  @keyframes flicker-border {
-    0%, 100% { opacity: 1; }
-    25% { opacity: 0.7; }
-    50% { opacity: 0.9; }
-    75% { opacity: 0.6; }
-  }
-
-  .animate-volatility-shake {
-    animation: volatility-shake 0.3s ease-in-out infinite;
-  }
-
-  .animate-volatility-shake-intense {
-    animation: volatility-shake-intense 0.15s ease-in-out infinite;
-  }
-
-  .animate-flicker-border {
-    animation: flicker-border 0.2s ease-in-out infinite;
-  }
-
-  /* Typewriter effect container */
-  .typewriter-text::after {
-    content: '▋';
-    animation: typewriter-cursor 0.8s step-end infinite;
-  }
-
-  /* Trading terminal number styling */
-  .mono-numbers {
-    font-variant-numeric: tabular-nums;
-    letter-spacing: 0.05em;
-  }
-
-  /* Item ticker animation */
-  @keyframes ticker {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-
-  .animate-ticker {
-    animation: ticker 30s linear infinite;
+    box-shadow: 0 0 10px hsla(var(--primary) / 0.5), inset 0 0 10px hsla(var(--primary) / 0.1);
   }
 }

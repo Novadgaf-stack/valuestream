@@ -8,8 +8,6 @@ import BoundingBox, { DetectedObject } from "./BoundingBox";
 import AnalyzingIndicator from "./AnalyzingIndicator";
 import BackoffWarning from "./BackoffWarning";
 import EvidencePanel, { EvidenceItem } from "./EvidencePanel";
-import HeatMapOverlay, { ScannedArea } from "./HeatMapOverlay";
-import ItemTicker, { TickerItem } from "./ItemTicker";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -44,10 +42,6 @@ const WebcamView = () => {
   // Evidence panel
   const [showEvidence, setShowEvidence] = useState(false);
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
-
-  // Heat map and ticker state
-  const [scannedAreas, setScannedAreas] = useState<ScannedArea[]>([]);
-  const [tickerItems, setTickerItems] = useState<TickerItem[]>([]);
 
   // Add log entry helper
   const addLog = useCallback((type: LogEntry["type"], message: string, value?: number) => {
@@ -192,17 +186,6 @@ const WebcamView = () => {
         const total = newObjects.reduce((sum, obj) => sum + obj.value, 0);
         setTotalValue(total);
 
-        // Add to heat map
-        const newScannedAreas: ScannedArea[] = newObjects.map((obj) => ({
-          x: obj.x,
-          y: obj.y,
-          w: obj.w,
-          h: obj.h,
-          value: obj.value,
-          timestamp: Date.now(),
-        }));
-        setScannedAreas((prev) => [...prev, ...newScannedAreas].slice(-50)); // Keep last 50 areas
-
         // Log and persist items
         for (const obj of newObjects) {
           addLog("detection", `Detected: ${obj.object}`, obj.value);
@@ -210,18 +193,6 @@ const WebcamView = () => {
             addLog("deduction", `Condition: Damaged - Value adjusted`);
           }
           addLog("confidence", `Confidence: ${Math.round(obj.confidence * 100)}%`);
-
-          // Add to ticker
-          setTickerItems((prev) => [
-            ...prev,
-            {
-              id: obj.id,
-              objectName: obj.object,
-              value: obj.value,
-              timestamp: new Date(),
-              isDamaged: obj.isDamaged,
-            },
-          ].slice(-30)); // Keep last 30 items
 
           // Save to database
           await supabase.from("detected_items").insert({
@@ -386,13 +357,6 @@ const WebcamView = () => {
         </div>
       )}
 
-      {/* Heat Map Overlay */}
-      <HeatMapOverlay 
-        scannedAreas={scannedAreas}
-        containerWidth={containerSize.width}
-        containerHeight={containerSize.height}
-      />
-
       {/* HUD Overlay */}
       <HudOverlay />
 
@@ -418,18 +382,15 @@ const WebcamView = () => {
       {/* Truth Log */}
       <TruthLog entries={logEntries} />
 
-      {/* Item Ticker */}
-      <ItemTicker items={tickerItems} />
-
       {/* Analyzing indicator */}
       <AnalyzingIndicator isActive={isAnalyzing} />
 
       {/* Controls */}
-      <div className="absolute bottom-20 left-4 z-30 flex items-center gap-4">
+      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-4">
         <div className="glass px-3 py-2">
           <div className="text-xs text-muted-foreground">
-            <div>MARKETFORCE v2.0</div>
-            <div className="text-primary">Gemini Vision • Live</div>
+            <div>VALUESTREAM v1.0</div>
+            <div className="text-primary">Gemini 3 Vision • 2s Interval</div>
           </div>
         </div>
 
