@@ -38,17 +38,17 @@ const ItemTicker = ({ items }: ItemTickerProps) => {
   if (animatedItems.length === 0) return null;
 
   return (
-    <div className="absolute bottom-16 left-0 right-0 z-20 overflow-hidden">
+    <div className="absolute bottom-14 sm:bottom-16 left-0 right-0 z-20 overflow-hidden">
       {/* Background bar */}
       <div className="relative bg-background/80 backdrop-blur-sm border-t border-b border-primary/30">
         {/* Gradient edges for fade effect */}
-        <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-background to-transparent z-10" />
-        <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-background to-transparent z-10" />
+        <div className="absolute left-0 top-0 bottom-0 w-10 sm:w-20 bg-gradient-to-r from-background to-transparent z-10" />
+        <div className="absolute right-0 top-0 bottom-0 w-10 sm:w-20 bg-gradient-to-l from-background to-transparent z-10" />
         
         {/* Scrolling container */}
         <div 
           ref={containerRef}
-          className="flex items-center gap-6 py-2 px-4 animate-ticker"
+          className="flex items-center gap-3 sm:gap-6 py-1.5 sm:py-2 px-2 sm:px-4 animate-ticker"
           style={{
             animation: `ticker ${Math.max(animatedItems.length * 3, 15)}s linear infinite`,
           }}
@@ -69,12 +69,12 @@ const ItemTicker = ({ items }: ItemTickerProps) => {
               />
               
               {/* Item info */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider max-w-[80px] sm:max-w-none truncate">
                   {item.objectName}
                 </span>
                 <span 
-                  className={`text-sm font-bold ${
+                  className={`text-xs sm:text-sm font-bold ${
                     item.isDamaged ? "text-warning" : "text-hud-price"
                   }`}
                   style={{
@@ -85,7 +85,7 @@ const ItemTicker = ({ items }: ItemTickerProps) => {
                 >
                   ${item.value.toLocaleString()}
                 </span>
-                <span className="text-[10px] text-muted-foreground/60">
+                <span className="text-[8px] sm:text-[10px] text-muted-foreground/60 hidden sm:inline">
                   {formatTimeSince(item.timestamp)}
                 </span>
               </div>
@@ -97,9 +97,9 @@ const ItemTicker = ({ items }: ItemTickerProps) => {
         </div>
 
         {/* Ticker label */}
-        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-background/90 px-2 py-0.5 border border-primary/50">
-          <span className="text-[10px] text-primary tracking-widest font-mono">
-            LIVE FEED
+        <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 bg-background/90 px-1.5 sm:px-2 py-0.5 border border-primary/50">
+          <span className="text-[8px] sm:text-[10px] text-primary tracking-widest font-mono">
+            LIVE
           </span>
         </div>
       </div>

@@ -46,7 +46,7 @@ const ColdOpen: React.FC = () => {
 
   const handleFlashComplete = useCallback(() => {
     setPhase('scanner');
-    navigate('/');
+    navigate('/scanner');
   }, [navigate]);
 
   return (

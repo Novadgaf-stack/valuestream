@@ -18,34 +18,34 @@ const Landing = () => {
       />
 
       {/* Nav */}
-      <nav className="relative z-20 flex items-center justify-between p-6 max-w-7xl mx-auto">
+      <nav className="relative z-20 flex items-center justify-between p-4 sm:p-6 max-w-7xl mx-auto">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-primary animate-pulse" />
-          <span className="text-lg tracking-[0.3em] text-primary text-glow">VALUESTREAM</span>
+          <div className="w-2 sm:w-3 h-2 sm:h-3 bg-primary animate-pulse" />
+          <span className="text-sm sm:text-lg tracking-[0.2em] sm:tracking-[0.3em] text-primary text-glow">MARKETFORCE</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {user ? (
             <>
               <Link to="/dashboard">
-                <Button variant="ghost" className="text-muted-foreground hover:text-primary">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs sm:text-sm">
                   Dashboard
                 </Button>
               </Link>
-              <Link to="/scanner">
-                <Button className="bg-primary text-primary-foreground tracking-wider">
-                  LAUNCH SCANNER
+              <Link to="/start">
+                <Button size="sm" className="bg-primary text-primary-foreground tracking-wider text-xs sm:text-sm">
+                  LAUNCH
                 </Button>
               </Link>
             </>
           ) : (
             <>
               <Link to="/auth">
-                <Button variant="ghost" className="text-muted-foreground hover:text-primary">
+                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs sm:text-sm">
                   Sign In
                 </Button>
               </Link>
               <Link to="/auth">
-                <Button className="bg-primary text-primary-foreground tracking-wider">
+                <Button size="sm" className="bg-primary text-primary-foreground tracking-wider text-xs sm:text-sm">
                   GET ACCESS
                 </Button>
               </Link>
@@ -55,33 +55,33 @@ const Landing = () => {
       </nav>
 
       {/* Hero */}
-      <section className="relative z-10 max-w-7xl mx-auto px-6 pt-20 pb-32">
+      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-16 sm:pb-32">
         <div className="text-center max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 glass px-4 py-2 mb-8">
-            <div className="w-2 h-2 bg-hud-price rounded-full animate-pulse" />
-            <span className="text-xs tracking-widest text-muted-foreground">POWERED BY GEMINI 3 VISION AI</span>
+          <div className="inline-flex items-center gap-2 glass px-3 sm:px-4 py-1.5 sm:py-2 mb-6 sm:mb-8">
+            <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-hud-price rounded-full animate-pulse" />
+            <span className="text-[10px] sm:text-xs tracking-widest text-muted-foreground">POWERED BY GEMINI 3 VISION AI</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl lg:text-8xl font-mono text-foreground mb-6 leading-tight">
+          <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-mono text-foreground mb-4 sm:mb-6 leading-tight">
             SEE THE{" "}
             <span className="text-primary text-glow-intense">VALUE</span>
             <br />
             IN EVERYTHING
           </h1>
           
-          <p className="text-xl md:text-2xl text-muted-foreground mb-12 max-w-2xl mx-auto">
+          <p className="text-base sm:text-xl md:text-2xl text-muted-foreground mb-8 sm:mb-12 max-w-2xl mx-auto px-4">
             Point your camera at anything. Get instant second-hand market valuations. 
             Know exactly what your reality is worth—in real-time.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to={user ? "/scanner" : "/auth"}>
-              <Button size="lg" className="bg-primary text-primary-foreground px-12 py-6 text-lg tracking-wider box-glow">
+            <Link to={user ? "/start" : "/auth"}>
+              <Button size="lg" className="bg-primary text-primary-foreground px-8 sm:px-12 py-4 sm:py-6 text-base sm:text-lg tracking-wider box-glow w-full sm:w-auto">
                 START SCANNING
               </Button>
             </Link>
             <a href="#how-it-works">
-              <Button size="lg" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10 px-8 py-6">
+              <Button size="lg" variant="outline" className="border-primary/50 text-primary hover:bg-primary/10 px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto">
                 HOW IT WORKS
               </Button>
             </a>
@@ -89,17 +89,17 @@ const Landing = () => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-8 mt-24 max-w-3xl mx-auto">
+        <div className="grid grid-cols-3 gap-4 sm:gap-8 mt-12 sm:mt-24 max-w-3xl mx-auto">
           {[
             { value: "2.4M+", label: "Objects Valued" },
             { value: "$847M", label: "Total Value Scanned" },
             { value: "0.3s", label: "Avg. Analysis Time" },
           ].map((stat, i) => (
             <div key={i} className="text-center">
-              <div className="text-3xl md:text-4xl text-primary text-glow font-mono mb-2">
+              <div className="text-xl sm:text-3xl md:text-4xl text-primary text-glow font-mono mb-1 sm:mb-2">
                 {stat.value}
               </div>
-              <div className="text-xs tracking-wider text-muted-foreground uppercase">
+              <div className="text-[10px] sm:text-xs tracking-wider text-muted-foreground uppercase">
                 {stat.label}
               </div>
             </div>
@@ -194,16 +194,16 @@ const Landing = () => {
       </section>
 
       {/* CTA */}
-      <section className="relative z-10 py-24 border-t border-primary/20">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl md:text-5xl text-foreground mb-6">
+      <section className="relative z-10 py-16 sm:py-24 border-t border-primary/20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-2xl sm:text-4xl md:text-5xl text-foreground mb-4 sm:mb-6">
             READY TO <span className="text-primary text-glow-intense">AUDIT REALITY</span>?
           </h2>
-          <p className="text-xl text-muted-foreground mb-8">
+          <p className="text-base sm:text-xl text-muted-foreground mb-6 sm:mb-8">
             Join thousands of users who know exactly what everything around them is worth.
           </p>
-          <Link to={user ? "/scanner" : "/auth"}>
-            <Button size="lg" className="bg-primary text-primary-foreground px-16 py-6 text-lg tracking-wider box-glow">
+          <Link to={user ? "/start" : "/auth"}>
+            <Button size="lg" className="bg-primary text-primary-foreground px-8 sm:px-16 py-4 sm:py-6 text-base sm:text-lg tracking-wider box-glow w-full sm:w-auto">
               {user ? "LAUNCH SCANNER" : "CREATE FREE ACCOUNT"}
             </Button>
           </Link>

@@ -23,11 +23,11 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<MarketForce />} />
+            <Route path="/" element={<Landing />} />
             <Route path="/start" element={<ColdOpen />} />
-            <Route path="/landing" element={<Landing />} />
+            <Route path="/scanner" element={<MarketForce />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/scanner" element={<Scanner />} />
+            <Route path="/legacy-scanner" element={<Scanner />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/replay/:sessionId" element={<Replay />} />
             <Route path="*" element={<NotFound />} />
