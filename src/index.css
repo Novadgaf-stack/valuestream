@@ -4,7 +4,7 @@
 
 /* MarketForce - High-Frequency Trading Terminal Design System */
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;500;600;700&display=swap');
 
 @layer base {
   :root {
@@ -193,6 +193,23 @@
     100% { background-position: 0% 100%; }
   }
 
+  @keyframes grid-pulse {
+    0%, 100% { opacity: 0.05; }
+    50% { opacity: 0.15; }
+  }
+
+  @keyframes scan-vertical {
+    0% { top: -5%; }
+    100% { top: 105%; }
+  }
+
+  @keyframes glitch-shift {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px); }
+    50% { transform: translateX(2px); }
+    75% { transform: translateX(-1px); }
+  }
+
   .animate-radar-pulse {
     animation: radar-pulse 2s ease-out infinite;
   }
@@ -228,6 +245,10 @@
   .animate-data-stream {
     animation: data-stream 20s linear infinite;
     background-size: 100% 200%;
+  }
+
+  .holo-glitch {
+    animation: glitch-shift 0.15s ease-in-out infinite;
   }
 
   /* Glass morphism - trading terminal style */
