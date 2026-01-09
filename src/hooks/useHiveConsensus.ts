@@ -13,6 +13,7 @@ interface HiveState {
   bbox: { x: number; y: number; w: number; h: number } | null;
   objectName: string;
   finalPrice: number;
+  volatilityScore: number;
   isProcessing: boolean;
   hasConsensus: boolean;
 }
@@ -27,6 +28,7 @@ export const useHiveConsensus = () => {
     bbox: null,
     objectName: '',
     finalPrice: 0,
+    volatilityScore: 0,
     isProcessing: false,
     hasConsensus: false,
   });
@@ -41,6 +43,7 @@ export const useHiveConsensus = () => {
       bbox: null,
       objectName: '',
       finalPrice: 0,
+      volatilityScore: 0,
       isProcessing: false,
       hasConsensus: false,
     });
@@ -180,6 +183,14 @@ export const useHiveConsensus = () => {
               }
             } else if (data.agent === 'judge') {
               if (data.type === 'complete' && data.content !== '[DONE]') {
+                // Calculate volatility score based on price difference
+                const lowVal = state.pessimist.value || 0;
+                const highVal = state.hypeman.value || 0;
+                const avgVal = (lowVal + highVal) / 2;
+                const volatility = avgVal > 0 
+                  ? Math.min(100, Math.round(((highVal - lowVal) / avgVal) * 100))
+                  : 0;
+
                 setState(prev => ({
                   ...prev,
                   judge: {
@@ -195,6 +206,7 @@ export const useHiveConsensus = () => {
                   } : prev.bbox,
                   objectName: data.objectName || prev.objectName,
                   finalPrice: data.value || 0,
+                  volatilityScore: data.volatilityScore || volatility,
                   hasConsensus: true,
                   isProcessing: false,
                 }));
@@ -216,7 +228,7 @@ export const useHiveConsensus = () => {
       console.error('Hive consensus error:', error);
       setState(prev => ({ ...prev, isProcessing: false }));
     }
-  }, []);
+  }, [state.pessimist.value, state.hypeman.value]);
 
   return {
     state,

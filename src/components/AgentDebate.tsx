@@ -9,6 +9,7 @@ interface AgentDebateProps {
   highballPrice: number;
   isPriceSettled: boolean;
   objectName: string;
+  volatilityScore?: number;
 }
 
 const AgentDebate: React.FC<AgentDebateProps> = ({
@@ -19,7 +20,8 @@ const AgentDebate: React.FC<AgentDebateProps> = ({
   lowballPrice,
   highballPrice,
   isPriceSettled,
-  objectName
+  objectName,
+  volatilityScore = 0,
 }) => {
   const [displayedPrice, setDisplayedPrice] = useState(0);
   const [isFlickering, setIsFlickering] = useState(false);
@@ -44,6 +46,9 @@ const AgentDebate: React.FC<AgentDebateProps> = ({
 
   if (!bbox) return null;
 
+  const isHighVolatility = volatilityScore > 75;
+  const isModerateVolatility = volatilityScore > 50 && volatilityScore <= 75;
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -51,6 +56,19 @@ const AgentDebate: React.FC<AgentDebateProps> = ({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(price);
+  };
+
+  // Get shake intensity based on volatility
+  const getShakeClass = () => {
+    if (isHighVolatility) return 'animate-volatility-shake-intense';
+    if (isModerateVolatility) return 'animate-volatility-shake';
+    return '';
+  };
+
+  const getBorderColor = () => {
+    if (isHighVolatility) return 'border-warning';
+    if (isPriceSettled) return 'border-hud-consensus';
+    return 'border-primary';
   };
 
   // Extract key points from agent text
@@ -74,7 +92,7 @@ const AgentDebate: React.FC<AgentDebateProps> = ({
 
   return (
     <div 
-      className="absolute pointer-events-none"
+      className={`absolute pointer-events-none ${getShakeClass()}`}
       style={{
         left: `${bbox.x}%`,
         top: `${bbox.y}%`,
@@ -82,18 +100,28 @@ const AgentDebate: React.FC<AgentDebateProps> = ({
         height: `${bbox.h}%`,
       }}
     >
+      {/* Volatility warning indicator */}
+      {isHighVolatility && (
+        <div className="absolute -top-24 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-warning/20 border border-warning px-3 py-1 rounded animate-pulse">
+          <span className="text-xs font-mono text-warning uppercase tracking-wider">
+            ⚠️ HIGH VOLATILITY: {volatilityScore}%
+          </span>
+        </div>
+      )}
+
       {/* Bounding box */}
       <div className={`
         absolute inset-0 
-        border-2 ${isPriceSettled ? 'border-hud-consensus' : 'border-primary'}
-        ${isPriceSettled ? 'box-glow-consensus' : 'box-glow'}
+        border-2 ${getBorderColor()}
+        ${isHighVolatility ? 'box-glow-warning' : isPriceSettled ? 'box-glow-consensus' : 'box-glow'}
         transition-all duration-500
+        ${isHighVolatility ? 'animate-flicker-border' : ''}
       `}>
         {/* Corner accents */}
-        <div className={`absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 ${isPriceSettled ? 'border-hud-consensus' : 'border-primary'}`} />
-        <div className={`absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 ${isPriceSettled ? 'border-hud-consensus' : 'border-primary'}`} />
-        <div className={`absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 ${isPriceSettled ? 'border-hud-consensus' : 'border-primary'}`} />
-        <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 ${isPriceSettled ? 'border-hud-consensus' : 'border-primary'}`} />
+        <div className={`absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 ${getBorderColor()}`} />
+        <div className={`absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 ${getBorderColor()}`} />
+        <div className={`absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 ${getBorderColor()}`} />
+        <div className={`absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 ${getBorderColor()}`} />
       </div>
 
       {/* Object name - above box */}
