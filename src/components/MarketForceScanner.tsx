@@ -358,30 +358,30 @@ const MarketForceScanner: React.FC = () => {
 
       {/* Session info */}
       {sessionId && (
-        <div className="absolute top-4 right-4 glass-dark px-4 py-2 rounded z-20">
-          <div className="text-xs text-muted-foreground font-mono">
+        <div className="absolute top-2 sm:top-4 right-2 sm:right-4 glass-dark px-2 sm:px-4 py-1.5 sm:py-2 rounded z-20">
+          <div className="text-[10px] sm:text-xs text-muted-foreground font-mono">
             SESSION: {sessionId.slice(0, 8)}...
           </div>
-          <div className="text-sm text-primary font-mono">
+          <div className="text-xs sm:text-sm text-primary font-mono">
             {detectedItems.length} items • ${totalValue.toLocaleString()}
           </div>
         </div>
       )}
 
       {/* Control buttons */}
-      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-4 z-20">
+      <div className="absolute bottom-20 sm:bottom-24 left-1/2 -translate-x-1/2 flex flex-wrap justify-center gap-2 sm:gap-4 z-20 px-4 w-full max-w-lg sm:max-w-none">
         <Button
           onClick={handleToggleScan}
           size="lg"
           className={`
-            gap-2 px-8 py-6 text-lg font-mono
+            gap-1.5 sm:gap-2 px-4 sm:px-8 py-3 sm:py-6 text-sm sm:text-lg font-mono
             ${isScanning 
               ? 'bg-destructive hover:bg-destructive/80' 
               : 'bg-primary hover:bg-primary/80'}
           `}
         >
-          {isScanning ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
-          {isScanning ? 'STOP' : 'START SCAN'}
+          {isScanning ? <Pause className="w-4 h-4 sm:w-5 sm:h-5" /> : <Play className="w-4 h-4 sm:w-5 sm:h-5" />}
+          {isScanning ? 'STOP' : 'SCAN'}
         </Button>
 
         {state.hasConsensus && (
@@ -389,10 +389,10 @@ const MarketForceScanner: React.FC = () => {
             onClick={handleFreezeMint}
             size="lg"
             variant="outline"
-            className="gap-2 px-8 py-6 text-lg font-mono border-hud-price text-hud-price hover:bg-hud-price/10"
+            className="gap-1.5 sm:gap-2 px-4 sm:px-8 py-3 sm:py-6 text-sm sm:text-lg font-mono border-hud-price text-hud-price hover:bg-hud-price/10"
           >
-            <Zap className="w-5 h-5" />
-            FREEZE & MINT
+            <Zap className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden sm:inline">FREEZE &</span> MINT
           </Button>
         )}
 
@@ -401,10 +401,10 @@ const MarketForceScanner: React.FC = () => {
             onClick={handleEndSession}
             size="lg"
             variant="outline"
-            className="gap-2 px-8 py-6 text-lg font-mono border-muted-foreground text-muted-foreground hover:bg-muted/10"
+            className="gap-1.5 sm:gap-2 px-4 sm:px-8 py-3 sm:py-6 text-sm sm:text-lg font-mono border-muted-foreground text-muted-foreground hover:bg-muted/10"
           >
-            <Save className="w-5 h-5" />
-            END SESSION
+            <Save className="w-4 h-4 sm:w-5 sm:h-5" />
+            END
           </Button>
         )}
       </div>
