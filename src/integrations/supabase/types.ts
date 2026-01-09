@@ -14,7 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_sessions: {
+        Row: {
+          ended_at: string | null
+          id: string
+          is_active: boolean
+          item_count: number
+          started_at: string
+          title: string
+          total_value: number
+          user_id: string
+        }
+        Insert: {
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean
+          item_count?: number
+          started_at?: string
+          title?: string
+          total_value?: number
+          user_id: string
+        }
+        Update: {
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean
+          item_count?: number
+          started_at?: string
+          title?: string
+          total_value?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      detected_items: {
+        Row: {
+          bbox_h: number
+          bbox_w: number
+          bbox_x: number
+          bbox_y: number
+          confidence: number
+          detected_at: string
+          id: string
+          is_damaged: boolean
+          object_name: string
+          session_id: string
+          snapshot_data: string | null
+          value: number
+        }
+        Insert: {
+          bbox_h?: number
+          bbox_w?: number
+          bbox_x?: number
+          bbox_y?: number
+          confidence?: number
+          detected_at?: string
+          id?: string
+          is_damaged?: boolean
+          object_name: string
+          session_id: string
+          snapshot_data?: string | null
+          value?: number
+        }
+        Update: {
+          bbox_h?: number
+          bbox_w?: number
+          bbox_x?: number
+          bbox_y?: number
+          confidence?: number
+          detected_at?: string
+          id?: string
+          is_damaged?: boolean
+          object_name?: string
+          session_id?: string
+          snapshot_data?: string | null
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "detected_items_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      value_snapshots: {
+        Row: {
+          captured_at: string
+          id: string
+          item_count: number
+          session_id: string
+          total_value: number
+        }
+        Insert: {
+          captured_at?: string
+          id?: string
+          item_count?: number
+          session_id: string
+          total_value?: number
+        }
+        Update: {
+          captured_at?: string
+          id?: string
+          item_count?: number
+          session_id?: string
+          total_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "value_snapshots_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "audit_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
