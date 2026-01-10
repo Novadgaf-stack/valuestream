@@ -11,7 +11,7 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice } = await req.json();
+    const { text, voiceId } = await req.json();
 
     if (!text) {
       return new Response(
@@ -20,36 +20,45 @@ serve(async (req) => {
       );
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      console.error("LOVABLE_API_KEY not configured");
+    const ELEVENLABS_API_KEY = Deno.env.get("ELEVENLABS_API_KEY");
+    if (!ELEVENLABS_API_KEY) {
+      console.error("ELEVENLABS_API_KEY not configured");
       return new Response(
-        JSON.stringify({ error: "AI gateway key not configured" }),
+        JSON.stringify({ error: "ElevenLabs API key not configured" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     console.log("Generating TTS for:", text.substring(0, 50));
 
-    // Use OpenAI TTS through Lovable gateway
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/audio/speech", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: "tts-1",
-        input: text,
-        voice: voice || "onyx", // Deep, authoritative voice for HUD feel
-        response_format: "mp3",
-        speed: 1.1, // Slightly faster for HUD announcements
-      }),
-    });
+    // Use "onyx" style voice - Roger is deep and authoritative
+    const selectedVoiceId = voiceId || "CwhRBWXzGAHq8TQ4Fs17"; // Roger voice
+
+    const response = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}?output_format=mp3_44100_128`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": ELEVENLABS_API_KEY,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: "eleven_turbo_v2_5",
+          voice_settings: {
+            stability: 0.7,
+            similarity_boost: 0.8,
+            style: 0.3,
+            use_speaker_boost: true,
+            speed: 1.15, // Slightly faster for HUD announcements
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("TTS gateway error:", response.status, errorText);
+      console.error("ElevenLabs TTS error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "TTS generation failed", details: errorText }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
