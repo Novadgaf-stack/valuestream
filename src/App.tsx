@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import Scanner from "./pages/Scanner";
 import Dashboard from "./pages/Dashboard";
 import Replay from "./pages/Replay";
+import SharedSession from "./pages/SharedSession";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/scanner" element={<Scanner />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/replay/:sessionId" element={<Replay />} />
+            <Route path="/share/:sessionId" element={<SharedSession />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

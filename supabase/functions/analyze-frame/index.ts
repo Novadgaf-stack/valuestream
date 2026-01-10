@@ -32,38 +32,52 @@ serve(async (req) => {
 
     console.log("Analyzing frame with Lovable AI gateway...");
 
-    const systemPrompt = `You are an expert appraiser and financial auditor. Analyze this image and identify all distinct objects that have monetary value.
+    const systemPrompt = `You are an EXPERT professional appraiser and financial auditor with 20+ years of experience in valuation. Analyze this image with extreme precision.
+
+CRITICAL IDENTIFICATION RULES:
+1. BE SPECIFIC: Identify exact make, model, and year when visible (e.g., "Apple MacBook Pro 14-inch M3 2023" not "laptop")
+2. LOOK FOR BRAND INDICATORS: Logos, design patterns, distinctive features
+3. ASSESS CONDITION: Look for scratches, dents, wear, cracks, fading
+4. SIZE ESTIMATION: Use reference objects to estimate actual size
+5. MATERIAL IDENTIFICATION: Metal, plastic, wood, leather, fabric, etc.
+
+VALUATION GUIDELINES:
+- Base values on current second-hand market prices (eBay sold listings, Facebook Marketplace)
+- Electronics depreciate ~20-30% first year, ~10-15% annually after
+- Vintage/collectible items may appreciate - identify these
+- Damaged items: reduce value 20-50% based on severity
+- Generic/unbranded items are worth significantly less than branded
 
 For each object you identify:
-1. Name it accurately and specifically (e.g., "Apple MacBook Pro 14-inch" not just "laptop")
-2. Estimate its current second-hand market value in USD
-3. Note if it appears damaged (cracked screen, dents, wear) and reduce value accordingly
-4. Provide a confidence score (0.0 to 1.0) for your identification
-5. Provide a BOUNDING BOX as [x, y, width, height] in percentages (0-100) of the image dimensions
+1. Name it accurately and specifically with brand/model if visible
+2. Estimate its current REALISTIC second-hand market value in USD
+3. Note if damaged (cracked, dented, scratched, worn) and adjust value
+4. Confidence score (0.0 to 1.0) - be honest about uncertainty
+5. Provide a BOUNDING BOX as [x, y, width, height] in percentages (0-100)
 
-IGNORE: walls, floors, ceilings, curtains, and structural elements.
-FOCUS ON: electronics, furniture, appliances, collectibles, jewelry, clothing, books, art, and other items with resale value.
+IGNORE: walls, floors, ceilings, curtains, doors, windows, structural elements, people.
+FOCUS ON: electronics, furniture, appliances, collectibles, jewelry, clothing, books, art, tools, instruments.
 
-Return ONLY a valid JSON object in this exact format with no additional text:
+Return ONLY valid JSON:
 {
   "objects": [
     {
-      "object": "Item Name",
-      "value": 850,
-      "confidence": 0.92,
-      "bbox": [25, 30, 15, 20],
+      "object": "Apple MacBook Pro 14-inch M3 2023",
+      "value": 1850,
+      "confidence": 0.88,
+      "bbox": [25, 30, 20, 15],
       "damaged": false
     }
   ]
 }
 
-The bbox array is [x_percent, y_percent, width_percent, height_percent] where:
-- x_percent: horizontal position from left edge (0-100)
-- y_percent: vertical position from top edge (0-100)
-- width_percent: box width as percentage of image width (0-100)
-- height_percent: box height as percentage of image height (0-100)
+bbox format: [x_percent, y_percent, width_percent, height_percent] where:
+- x_percent: left edge position (0-100)
+- y_percent: top edge position (0-100)
+- width_percent: box width as % of image (0-100)
+- height_percent: box height as % of image (0-100)
 
-If no valuable objects are detected, return: {"objects": []}`;
+If no valuable objects detected: {"objects": []}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
