@@ -9,11 +9,15 @@ import AnalyzingIndicator from "./AnalyzingIndicator";
 import BackoffWarning from "./BackoffWarning";
 import EvidencePanel, { EvidenceItem } from "./EvidencePanel";
 import ShareButton from "./ShareButton";
+import SessionNotes from "./SessionNotes";
+import CollaboratorPanel from "./CollaboratorPanel";
+import MobileControls from "./MobileControls";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useVoiceNarration } from "@/hooks/useVoiceNarration";
+import { useRealtimeSession } from "@/hooks/useRealtimeSession";
 import { Button } from "@/components/ui/button";
-import { Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX, Users, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 
 const ANALYSIS_INTERVAL = 2000;
@@ -26,7 +30,7 @@ const WebcamView = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { announceDetection, toggleVoice, voiceEnabled, isSpeaking } = useVoiceNarration();
+  const { announceDetection, toggleVoice, voiceEnabled } = useVoiceNarration();
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [totalValue, setTotalValue] = useState(0);
@@ -43,9 +47,14 @@ const WebcamView = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionTitle, setSessionTitle] = useState("Untitled Session");
 
-  // Evidence panel
+  // UI panels
   const [showEvidence, setShowEvidence] = useState(false);
+  const [showNotes, setShowNotes] = useState(false);
+  const [showCollaborators, setShowCollaborators] = useState(false);
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
+
+  // Realtime collaboration
+  const { connectedUsers, realtimeItems } = useRealtimeSession(sessionId);
 
   // Add log entry helper
   const addLog = useCallback((type: LogEntry["type"], message: string, value?: number) => {
@@ -274,7 +283,7 @@ const WebcamView = () => {
     }
 
     setIsAnalyzing(false);
-  }, [isAnalyzing, addLog, sessionId, pauseUntil, cropObject]);
+  }, [isAnalyzing, addLog, sessionId, pauseUntil, cropObject, announceDetection]);
 
   // Set up interval for frame capture
   useEffect(() => {
@@ -329,6 +338,12 @@ const WebcamView = () => {
     navigate("/dashboard");
   };
 
+  const handleShare = () => {
+    if (sessionId) {
+      // ShareButton will handle the modal
+    }
+  };
+
   return (
     <div ref={containerRef} className="relative w-full h-screen bg-background overflow-hidden">
       {/* Hidden canvas for cropping */}
@@ -352,11 +367,11 @@ const WebcamView = () => {
 
       {/* Permission denied overlay */}
       {hasPermission === false && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background z-50">
-          <div className="glass p-8 text-center max-w-md">
+        <div className="absolute inset-0 flex items-center justify-center bg-background z-50 p-4">
+          <div className="glass p-6 md:p-8 text-center max-w-md">
             <div className="text-4xl mb-4">📷</div>
-            <h2 className="text-xl text-primary mb-2">Camera Access Required</h2>
-            <p className="text-muted-foreground text-sm">
+            <h2 className="text-lg md:text-xl text-primary mb-2">Camera Access Required</h2>
+            <p className="text-muted-foreground text-xs md:text-sm">
               ValueStream needs camera access to analyze your environment in real-time.
               Please enable camera permissions and refresh the page.
             </p>
@@ -383,17 +398,59 @@ const WebcamView = () => {
         />
       ))}
 
-      {/* Evidence Panel */}
-      {showEvidence && <EvidencePanel items={evidenceItems} onClose={() => setShowEvidence(false)} />}
+      {/* Evidence Panel - Desktop positioned, mobile fullscreen */}
+      {showEvidence && (
+        <div className="hidden md:block">
+          <EvidencePanel items={evidenceItems} onClose={() => setShowEvidence(false)} />
+        </div>
+      )}
+      {showEvidence && (
+        <div className="md:hidden fixed inset-0 z-50 bg-background/95">
+          <EvidencePanel items={evidenceItems} onClose={() => setShowEvidence(false)} />
+        </div>
+      )}
 
-      {/* Truth Log */}
-      <TruthLog entries={logEntries} />
+      {/* Truth Log - Hidden on mobile */}
+      <div className="hidden md:block">
+        <TruthLog entries={logEntries} />
+      </div>
 
       {/* Analyzing indicator */}
       <AnalyzingIndicator isActive={isAnalyzing} />
 
-      {/* Controls */}
-      <div className="absolute bottom-4 left-4 z-20 flex items-center gap-4">
+      {/* Session Notes Modal */}
+      {showNotes && sessionId && (
+        <SessionNotes
+          sessionId={sessionId}
+          onClose={() => setShowNotes(false)}
+        />
+      )}
+
+      {/* Collaborator Panel Modal */}
+      {showCollaborators && sessionId && (
+        <CollaboratorPanel
+          sessionId={sessionId}
+          isOwner={true}
+          onClose={() => setShowCollaborators(false)}
+        />
+      )}
+
+      {/* Mobile Controls */}
+      <MobileControls
+        voiceEnabled={voiceEnabled}
+        onToggleVoice={toggleVoice}
+        showEvidence={showEvidence}
+        onToggleEvidence={() => setShowEvidence(!showEvidence)}
+        onShare={handleShare}
+        onCollaborators={() => setShowCollaborators(true)}
+        onNotes={() => setShowNotes(true)}
+        onEndSession={handleEndSession}
+        sessionTitle={sessionTitle}
+        connectedUsers={connectedUsers.length}
+      />
+
+      {/* Desktop Controls */}
+      <div className="hidden md:flex absolute bottom-4 left-4 z-20 items-center gap-3 flex-wrap">
         <div className="glass px-3 py-2">
           <div className="text-xs text-muted-foreground">
             <div>VALUESTREAM v1.0</div>
@@ -417,6 +474,31 @@ const WebcamView = () => {
           onClick={() => setShowEvidence(!showEvidence)}
         >
           {showEvidence ? "Hide Evidence" : "Show Evidence"}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-primary/50 text-primary hover:bg-primary/10"
+          onClick={() => setShowNotes(true)}
+        >
+          <StickyNote size={14} className="mr-1" />
+          Notes
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="border-primary/50 text-primary hover:bg-primary/10"
+          onClick={() => setShowCollaborators(true)}
+        >
+          <Users size={14} className="mr-1" />
+          Collaborate
+          {connectedUsers.length > 1 && (
+            <span className="ml-1 text-xs bg-hud-price/20 text-hud-price px-1.5 rounded">
+              {connectedUsers.length}
+            </span>
+          )}
         </Button>
 
         {sessionId && (
@@ -444,11 +526,16 @@ const WebcamView = () => {
         </Link>
       </div>
 
-      {/* Session indicator */}
-      <div className="absolute top-4 left-4 z-20 glass px-3 py-2">
+      {/* Session indicator - Desktop only */}
+      <div className="hidden md:block absolute top-4 left-4 z-20 glass px-3 py-2">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 bg-hud-price rounded-full animate-pulse" />
           <span className="text-xs text-primary tracking-wider">RECORDING</span>
+          {connectedUsers.length > 1 && (
+            <span className="text-xs text-hud-price ml-2">
+              {connectedUsers.length} users
+            </span>
+          )}
         </div>
         <div className="text-xs text-muted-foreground mt-1">{sessionTitle}</div>
       </div>

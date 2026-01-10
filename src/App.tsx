@@ -10,6 +10,7 @@ import Scanner from "./pages/Scanner";
 import Dashboard from "./pages/Dashboard";
 import Replay from "./pages/Replay";
 import SharedSession from "./pages/SharedSession";
+import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/replay/:sessionId" element={<Replay />} />
             <Route path="/share/:sessionId" element={<SharedSession />} />
+            <Route path="/install" element={<Install />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
