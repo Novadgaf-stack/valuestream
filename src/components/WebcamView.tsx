@@ -8,9 +8,12 @@ import BoundingBox, { DetectedObject } from "./BoundingBox";
 import AnalyzingIndicator from "./AnalyzingIndicator";
 import BackoffWarning from "./BackoffWarning";
 import EvidencePanel, { EvidenceItem } from "./EvidencePanel";
+import ShareButton from "./ShareButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useVoiceNarration } from "@/hooks/useVoiceNarration";
 import { Button } from "@/components/ui/button";
+import { Volume2, VolumeX } from "lucide-react";
 import { toast } from "sonner";
 
 const ANALYSIS_INTERVAL = 2000;
@@ -23,6 +26,7 @@ const WebcamView = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { announceDetection, toggleVoice, voiceEnabled, isSpeaking } = useVoiceNarration();
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [totalValue, setTotalValue] = useState(0);
@@ -186,13 +190,16 @@ const WebcamView = () => {
         const total = newObjects.reduce((sum, obj) => sum + obj.value, 0);
         setTotalValue(total);
 
-        // Log and persist items
+        // Log, persist items, and announce
         for (const obj of newObjects) {
           addLog("detection", `Detected: ${obj.object}`, obj.value);
           if (obj.isDamaged) {
             addLog("deduction", `Condition: Damaged - Value adjusted`);
           }
           addLog("confidence", `Confidence: ${Math.round(obj.confidence * 100)}%`);
+          
+          // Voice announcement
+          announceDetection(obj.object, obj.value, obj.isDamaged);
 
           // Save to database
           await supabase.from("detected_items").insert({
@@ -397,11 +404,29 @@ const WebcamView = () => {
         <Button
           variant="outline"
           size="sm"
+          className={`border-primary/50 hover:bg-primary/10 ${voiceEnabled ? "text-primary" : "text-muted-foreground"}`}
+          onClick={toggleVoice}
+        >
+          {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
           className="border-primary/50 text-primary hover:bg-primary/10"
           onClick={() => setShowEvidence(!showEvidence)}
         >
           {showEvidence ? "Hide Evidence" : "Show Evidence"}
         </Button>
+
+        {sessionId && (
+          <ShareButton
+            sessionId={sessionId}
+            sessionTitle={sessionTitle}
+            totalValue={totalValue}
+            itemCount={detectedObjects.length}
+          />
+        )}
 
         <Button
           variant="outline"
