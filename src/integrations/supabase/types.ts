@@ -19,6 +19,7 @@ export type Database = {
           ended_at: string | null
           id: string
           is_active: boolean
+          is_public: boolean
           item_count: number
           started_at: string
           title: string
@@ -29,6 +30,7 @@ export type Database = {
           ended_at?: string | null
           id?: string
           is_active?: boolean
+          is_public?: boolean
           item_count?: number
           started_at?: string
           title?: string
@@ -39,6 +41,7 @@ export type Database = {
           ended_at?: string | null
           id?: string
           is_active?: boolean
+          is_public?: boolean
           item_count?: number
           started_at?: string
           title?: string
