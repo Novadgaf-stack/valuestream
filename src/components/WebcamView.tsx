@@ -39,6 +39,7 @@ const WebcamView = () => {
   const { user } = useAuth();
   const { 
     announceDetection, 
+    speak,
     toggleVoice, 
     voiceEnabled, 
     selectedVoice, 
@@ -52,25 +53,20 @@ const WebcamView = () => {
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
-  // Backoff state
   const [pauseUntil, setPauseUntil] = useState<Date | null>(null);
   const [backoffReason, setBackoffReason] = useState("");
 
-  // Session state
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionTitle, setSessionTitle] = useState("Untitled Session");
 
-  // UI panels
   const [showEvidence, setShowEvidence] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
 
-  // Realtime collaboration
   const { connectedUsers } = useRealtimeSession(sessionId);
 
-  // Add log entry helper
   const addLog = useCallback((type: LogEntry["type"], message: string, value?: number) => {
     const entry: LogEntry = {
       id: crypto.randomUUID(),
@@ -82,7 +78,16 @@ const WebcamView = () => {
     setLogEntries((prev) => [...prev.slice(-50), entry]);
   }, []);
 
-  // Create session on mount
+  // Speak single item (for tap-to-speak)
+  const speakItem = useCallback((name: string, value: number) => {
+    speak(`${name}, $${value.toLocaleString()}`);
+  }, [speak]);
+
+  // Handle bounding box tap
+  const handleBoundingBoxTap = useCallback((item: DetectedObject) => {
+    speakItem(item.object, item.value);
+  }, [speakItem]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -102,13 +107,12 @@ const WebcamView = () => {
       } else {
         setSessionId(data.id);
         setSessionTitle(data.title);
-        addLog("system", "Session started. Tap 'Scan' to analyze.");
+        addLog("system", "Session started. Tap Scan to analyze.");
       }
     };
 
     createSession();
 
-    // End session on unmount
     return () => {
       if (sessionId) {
         supabase
@@ -120,7 +124,6 @@ const WebcamView = () => {
     };
   }, [user, addLog]);
 
-  // Crop object from frame
   const cropObject = useCallback(
     (imageSrc: string, obj: DetectedObject): Promise<string> => {
       return new Promise((resolve) => {
@@ -149,11 +152,9 @@ const WebcamView = () => {
     []
   );
 
-  // Manual scan trigger
   const scanNow = useCallback(async () => {
     if (!webcamRef.current || isAnalyzing || !sessionId) return;
 
-    // Check backoff
     if (pauseUntil && Date.now() < pauseUntil.getTime()) {
       const remaining = Math.ceil((pauseUntil.getTime() - Date.now()) / 1000);
       toast.error(`Please wait ${remaining}s before scanning again`);
@@ -217,17 +218,12 @@ const WebcamView = () => {
         const total = newObjects.reduce((sum, obj) => sum + obj.value, 0);
         setTotalValue((prev) => prev + total);
 
-        // Process each object
         for (const obj of newObjects) {
           addLog("detection", `${obj.object}`, obj.value);
           if (obj.isDamaged) {
             addLog("deduction", `Condition: Worn/Damaged`);
           }
-          
-          // Voice announcement
-          announceDetection(obj.object, obj.value, obj.isDamaged);
 
-          // Save to database
           await supabase.from("detected_items").insert({
             session_id: sessionId,
             object_name: obj.object,
@@ -240,7 +236,6 @@ const WebcamView = () => {
             is_damaged: obj.isDamaged || false,
           });
 
-          // Crop and add to evidence
           const snapshot = await cropObject(imageSrc, obj);
           setEvidenceItems((prev) => {
             const existing = prev.find((e) => e.objectName === obj.object);
@@ -271,7 +266,6 @@ const WebcamView = () => {
           });
         }
 
-        // Update session totals
         const newTotal = totalValue + total;
         await supabase
           .from("audit_sessions")
@@ -281,7 +275,6 @@ const WebcamView = () => {
           })
           .eq("id", sessionId);
 
-        // Save value snapshot
         await supabase.from("value_snapshots").insert({
           session_id: sessionId,
           total_value: newTotal,
@@ -306,9 +299,8 @@ const WebcamView = () => {
     }
 
     setIsAnalyzing(false);
-  }, [isAnalyzing, addLog, sessionId, pauseUntil, cropObject, announceDetection, totalValue, evidenceItems.length]);
+  }, [isAnalyzing, addLog, sessionId, pauseUntil, cropObject, totalValue, evidenceItems.length]);
 
-  // Track container size
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
@@ -357,10 +349,8 @@ const WebcamView = () => {
 
   return (
     <div ref={containerRef} className="relative w-full h-screen bg-background overflow-hidden">
-      {/* Hidden canvas for cropping */}
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Webcam feed */}
       <Webcam
         ref={webcamRef}
         audio={false}
@@ -376,19 +366,19 @@ const WebcamView = () => {
         onUserMediaError={handleUserMediaError}
       />
 
-      {/* Subtle overlay gradient */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20 pointer-events-none" />
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 pointer-events-none" />
 
-      {/* Permission denied overlay */}
+      {/* Permission denied */}
       {hasPermission === false && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-50 p-4">
-          <div className="bg-card rounded-2xl shadow-xl p-8 text-center max-w-md animate-fade-in">
+          <div className="glass-premium rounded-2xl p-8 text-center max-w-md animate-fade-in">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <Camera className="w-8 h-8 text-primary" />
             </div>
             <h2 className="text-xl font-semibold text-foreground mb-2">Camera Access Required</h2>
             <p className="text-muted-foreground text-sm mb-6">
-              To scan and identify items, we need access to your camera. Please enable camera permissions and refresh.
+              To scan and identify items, we need access to your camera.
             </p>
             <Button onClick={() => window.location.reload()}>
               Refresh Page
@@ -397,30 +387,28 @@ const WebcamView = () => {
         </div>
       )}
 
-      {/* Top Header Bar */}
+      {/* Top Header */}
       <div className="absolute top-0 left-0 right-0 z-20 p-4">
         <div className="flex items-center justify-between">
           <Link to="/dashboard">
-            <Button variant="ghost" size="icon" className="bg-white/90 hover:bg-white shadow-lg">
+            <Button variant="ghost" size="icon" className="glass-premium rounded-full">
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </Button>
           </Link>
 
           <div className="flex items-center gap-2">
-            {/* Status indicator */}
-            <div className="glass px-3 py-1.5 rounded-full flex items-center gap-2">
+            <div className="glass-premium px-3 py-1.5 rounded-full flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${isAnalyzing ? 'bg-primary animate-pulse' : 'bg-green-500'}`} />
               <span className="text-sm font-medium text-foreground">
                 {isAnalyzing ? 'Scanning...' : 'Ready'}
               </span>
             </div>
 
-            {/* Voice toggle */}
             <Button 
               variant="ghost" 
               size="icon" 
-              className="bg-white/90 hover:bg-white shadow-lg"
-              onClick={() => setShowVoiceSettings(true)}
+              className="glass-premium rounded-full"
+              onClick={toggleVoice}
             >
               {voiceEnabled ? (
                 <Volume2 className="w-5 h-5 text-primary" />
@@ -429,11 +417,10 @@ const WebcamView = () => {
               )}
             </Button>
 
-            {/* Settings */}
             <Button 
               variant="ghost" 
               size="icon" 
-              className="bg-white/90 hover:bg-white shadow-lg"
+              className="glass-premium rounded-full"
               onClick={() => setShowVoiceSettings(true)}
             >
               <Settings className="w-5 h-5 text-foreground" />
@@ -442,25 +429,26 @@ const WebcamView = () => {
         </div>
       </div>
 
-      {/* Total Value Display */}
+      {/* Total Value */}
       <TotalValueTicker value={totalValue} isAnalyzing={isAnalyzing} />
 
-      {/* Bounding boxes */}
+      {/* Bounding boxes - tap to speak */}
       {detectedObjects.map((item) => (
         <BoundingBox
           key={item.id}
           item={item}
           containerWidth={containerSize.width}
           containerHeight={containerSize.height}
+          onTap={handleBoundingBoxTap}
         />
       ))}
 
       {/* Backoff Warning */}
       {pauseUntil && Date.now() < pauseUntil.getTime() && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30">
-          <div className="bg-warning/90 text-warning-foreground px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg animate-fade-in">
-            <AlertCircle className="w-4 h-4" />
-            <span className="text-sm font-medium">{backoffReason}</span>
+        <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30">
+          <div className="glass-premium bg-amber-500/10 border-amber-500/30 px-4 py-2 rounded-full flex items-center gap-2 animate-fade-in">
+            <AlertCircle className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-medium text-amber-600 dark:text-amber-400">{backoffReason}</span>
           </div>
         </div>
       )}
@@ -494,7 +482,7 @@ const WebcamView = () => {
             <Button
               variant="secondary"
               size="sm"
-              className="bg-white/90 hover:bg-white shadow-lg"
+              className="glass-premium border-0"
               onClick={() => setShowEvidence(true)}
             >
               <Package className="w-4 h-4 mr-2" />
@@ -504,7 +492,7 @@ const WebcamView = () => {
             <Button
               variant="secondary"
               size="sm"
-              className="bg-white/90 hover:bg-white shadow-lg"
+              className="glass-premium border-0"
               onClick={() => setShowNotes(true)}
             >
               <StickyNote className="w-4 h-4 mr-2" />
@@ -523,7 +511,7 @@ const WebcamView = () => {
             <Button
               variant="secondary"
               size="sm"
-              className="bg-white/90 hover:bg-white shadow-lg"
+              className="glass-premium border-0"
               onClick={() => setShowCollaborators(true)}
             >
               <Users className="w-4 h-4" />
@@ -538,7 +526,7 @@ const WebcamView = () => {
             <Button
               variant="outline"
               size="sm"
-              className="bg-white/90 hover:bg-white text-destructive border-destructive/30"
+              className="glass-premium text-destructive border-destructive/30 hover:bg-destructive/10"
               onClick={handleEndSession}
             >
               End Session
@@ -547,16 +535,20 @@ const WebcamView = () => {
         </div>
       </div>
 
-      {/* Truth Log - Desktop only */}
+      {/* Truth Log - Desktop */}
       <div className="hidden lg:block absolute left-4 top-24 bottom-32 w-80 z-10">
         <TruthLog entries={logEntries} />
       </div>
 
       {/* Evidence Panel Modal */}
       {showEvidence && (
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-end md:items-center justify-center">
-          <div className="bg-background w-full max-w-2xl max-h-[80vh] rounded-t-2xl md:rounded-2xl overflow-hidden animate-slide-in">
-            <EvidencePanel items={evidenceItems} onClose={() => setShowEvidence(false)} />
+        <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end md:items-center justify-center">
+          <div className="bg-card w-full max-w-2xl max-h-[80vh] rounded-t-2xl md:rounded-2xl overflow-hidden animate-slide-up">
+            <EvidencePanel 
+              items={evidenceItems} 
+              onClose={() => setShowEvidence(false)}
+              onSpeakItem={speakItem}
+            />
           </div>
         </div>
       )}
