@@ -1,28 +1,35 @@
 import { useRef, useCallback, useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Webcam from "react-webcam";
-import HudOverlay from "./HudOverlay";
 import TotalValueTicker from "./TotalValueTicker";
 import TruthLog, { LogEntry } from "./TruthLog";
 import BoundingBox, { DetectedObject } from "./BoundingBox";
-import AnalyzingIndicator from "./AnalyzingIndicator";
-import BackoffWarning from "./BackoffWarning";
 import EvidencePanel, { EvidenceItem } from "./EvidencePanel";
 import ShareButton from "./ShareButton";
 import SessionNotes from "./SessionNotes";
 import CollaboratorPanel from "./CollaboratorPanel";
-import MobileControls from "./MobileControls";
+import VoiceSettings from "./VoiceSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useVoiceNarration } from "@/hooks/useVoiceNarration";
 import { useRealtimeSession } from "@/hooks/useRealtimeSession";
 import { Button } from "@/components/ui/button";
-import { Volume2, VolumeX, Users, StickyNote } from "lucide-react";
+import { 
+  Camera, 
+  Volume2, 
+  VolumeX, 
+  Users, 
+  StickyNote, 
+  Settings,
+  Package,
+  ArrowLeft,
+  Loader2,
+  AlertCircle
+} from "lucide-react";
 import { toast } from "sonner";
 
-const ANALYSIS_INTERVAL = 2000;
-const BACKOFF_MIN = 10000;
-const BACKOFF_MAX = 30000;
+const BACKOFF_MIN = 5000;
+const BACKOFF_MAX = 15000;
 
 const WebcamView = () => {
   const webcamRef = useRef<Webcam>(null);
@@ -30,7 +37,13 @@ const WebcamView = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { announceDetection, toggleVoice, voiceEnabled } = useVoiceNarration();
+  const { 
+    announceDetection, 
+    toggleVoice, 
+    voiceEnabled, 
+    selectedVoice, 
+    setVoiceId 
+  } = useVoiceNarration();
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [totalValue, setTotalValue] = useState(0);
@@ -51,10 +64,11 @@ const WebcamView = () => {
   const [showEvidence, setShowEvidence] = useState(false);
   const [showNotes, setShowNotes] = useState(false);
   const [showCollaborators, setShowCollaborators] = useState(false);
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
 
   // Realtime collaboration
-  const { connectedUsers, realtimeItems } = useRealtimeSession(sessionId);
+  const { connectedUsers } = useRealtimeSession(sessionId);
 
   // Add log entry helper
   const addLog = useCallback((type: LogEntry["type"], message: string, value?: number) => {
@@ -88,7 +102,7 @@ const WebcamView = () => {
       } else {
         setSessionId(data.id);
         setSessionTitle(data.title);
-        addLog("system", "Session initialized");
+        addLog("system", "Session started. Tap 'Scan' to analyze.");
       }
     };
 
@@ -135,20 +149,25 @@ const WebcamView = () => {
     []
   );
 
-  // Capture frame and send to API
-  const analyzeFrame = useCallback(async () => {
+  // Manual scan trigger
+  const scanNow = useCallback(async () => {
     if (!webcamRef.current || isAnalyzing || !sessionId) return;
 
     // Check backoff
     if (pauseUntil && Date.now() < pauseUntil.getTime()) {
+      const remaining = Math.ceil((pauseUntil.getTime() - Date.now()) / 1000);
+      toast.error(`Please wait ${remaining}s before scanning again`);
       return;
     }
 
     const imageSrc = webcamRef.current.getScreenshot();
-    if (!imageSrc) return;
+    if (!imageSrc) {
+      toast.error("Unable to capture image");
+      return;
+    }
 
     setIsAnalyzing(true);
-    addLog("system", "Capturing frame for analysis...");
+    addLog("system", "Analyzing...");
 
     try {
       const base64Data = imageSrc.split(",")[1];
@@ -160,28 +179,27 @@ const WebcamView = () => {
       if (error) {
         console.error("Edge function error:", error);
         addLog("error", `Analysis failed: ${error.message}`);
+        toast.error("Analysis failed. Try again.");
 
-        // Apply backoff on error
         const backoffTime = BACKOFF_MIN + Math.random() * (BACKOFF_MAX - BACKOFF_MIN);
         setPauseUntil(new Date(Date.now() + backoffTime));
-        setBackoffReason("API error - cooling down");
-        addLog("system", `Pausing analysis for ${Math.round(backoffTime / 1000)}s`);
+        setBackoffReason("Cooling down");
 
         setIsAnalyzing(false);
         return;
       }
 
-      // Check for rate limit in response
       if (data?.error && (data.status === 429 || data.status === 502)) {
         const backoffTime = BACKOFF_MIN + Math.random() * (BACKOFF_MAX - BACKOFF_MIN);
         setPauseUntil(new Date(Date.now() + backoffTime));
-        setBackoffReason("Rate limited - backing off");
+        setBackoffReason("Rate limited");
         addLog("error", "Rate limit reached");
+        toast.error("Too many requests. Please wait.");
         setIsAnalyzing(false);
         return;
       }
 
-      if (data?.objects && Array.isArray(data.objects)) {
+      if (data?.objects && Array.isArray(data.objects) && data.objects.length > 0) {
         const newObjects: DetectedObject[] = data.objects.map((obj: any, index: number) => ({
           id: crypto.randomUUID(),
           object: obj.object || "Unknown",
@@ -197,15 +215,14 @@ const WebcamView = () => {
         setDetectedObjects(newObjects);
 
         const total = newObjects.reduce((sum, obj) => sum + obj.value, 0);
-        setTotalValue(total);
+        setTotalValue((prev) => prev + total);
 
-        // Log, persist items, and announce
+        // Process each object
         for (const obj of newObjects) {
-          addLog("detection", `Detected: ${obj.object}`, obj.value);
+          addLog("detection", `${obj.object}`, obj.value);
           if (obj.isDamaged) {
-            addLog("deduction", `Condition: Damaged - Value adjusted`);
+            addLog("deduction", `Condition: Worn/Damaged`);
           }
-          addLog("confidence", `Confidence: ${Math.round(obj.confidence * 100)}%`);
           
           // Voice announcement
           announceDetection(obj.object, obj.value, obj.isDamaged);
@@ -255,48 +272,41 @@ const WebcamView = () => {
         }
 
         // Update session totals
+        const newTotal = totalValue + total;
         await supabase
           .from("audit_sessions")
-          .update({ total_value: total, item_count: newObjects.length })
+          .update({ 
+            total_value: newTotal, 
+            item_count: evidenceItems.length + newObjects.length 
+          })
           .eq("id", sessionId);
 
-        // Save value snapshot for replay
+        // Save value snapshot
         await supabase.from("value_snapshots").insert({
           session_id: sessionId,
-          total_value: total,
-          item_count: newObjects.length,
+          total_value: newTotal,
+          item_count: evidenceItems.length + newObjects.length,
         });
 
-        addLog("system", `Scene analysis complete. ${newObjects.length} objects found.`);
+        toast.success(`Found ${newObjects.length} item${newObjects.length > 1 ? 's' : ''}`);
+        addLog("system", `Found ${newObjects.length} item${newObjects.length > 1 ? 's' : ''}`);
       } else {
-        addLog("system", "No objects detected in frame.");
+        toast.info("No items detected. Try pointing at specific objects.");
+        addLog("system", "No items detected in frame.");
         setDetectedObjects([]);
       }
     } catch (err) {
       console.error("Analysis error:", err);
-      addLog("error", `Analysis error: ${err instanceof Error ? err.message : "Unknown error"}`);
+      addLog("error", `Error: ${err instanceof Error ? err.message : "Unknown"}`);
+      toast.error("Something went wrong. Try again.");
 
-      // Apply backoff
       const backoffTime = BACKOFF_MIN + Math.random() * (BACKOFF_MAX - BACKOFF_MIN);
       setPauseUntil(new Date(Date.now() + backoffTime));
-      setBackoffReason("Unexpected error - cooling down");
+      setBackoffReason("Error recovery");
     }
 
     setIsAnalyzing(false);
-  }, [isAnalyzing, addLog, sessionId, pauseUntil, cropObject, announceDetection]);
-
-  // Set up interval for frame capture
-  useEffect(() => {
-    if (!hasPermission || !sessionId) return;
-
-    addLog("system", "ValueStream initialized. Starting real-time analysis...");
-
-    const interval = setInterval(() => {
-      analyzeFrame();
-    }, ANALYSIS_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [analyzeFrame, hasPermission, sessionId, addLog]);
+  }, [isAnalyzing, addLog, sessionId, pauseUntil, cropObject, announceDetection, totalValue, evidenceItems.length]);
 
   // Track container size
   useEffect(() => {
@@ -316,13 +326,13 @@ const WebcamView = () => {
 
   const handleUserMedia = useCallback(() => {
     setHasPermission(true);
-    addLog("system", "Camera access granted.");
+    addLog("system", "Camera ready.");
   }, [addLog]);
 
   const handleUserMediaError = useCallback(
     (error: string | DOMException) => {
       setHasPermission(false);
-      addLog("error", `Camera access denied: ${error}`);
+      addLog("error", `Camera denied: ${error}`);
     },
     [addLog]
   );
@@ -331,18 +341,19 @@ const WebcamView = () => {
     if (sessionId) {
       await supabase
         .from("audit_sessions")
-        .update({ is_active: false, ended_at: new Date().toISOString() })
+        .update({ 
+          is_active: false, 
+          ended_at: new Date().toISOString(),
+          total_value: totalValue,
+          item_count: evidenceItems.length
+        })
         .eq("id", sessionId);
       toast.success("Session saved");
     }
     navigate("/dashboard");
   };
 
-  const handleShare = () => {
-    if (sessionId) {
-      // ShareButton will handle the modal
-    }
-  };
+  const canScan = hasPermission && !isAnalyzing && !(pauseUntil && Date.now() < pauseUntil.getTime());
 
   return (
     <div ref={containerRef} className="relative w-full h-screen bg-background overflow-hidden">
@@ -365,27 +376,73 @@ const WebcamView = () => {
         onUserMediaError={handleUserMediaError}
       />
 
+      {/* Subtle overlay gradient */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/20 pointer-events-none" />
+
       {/* Permission denied overlay */}
       {hasPermission === false && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-50 p-4">
-          <div className="glass p-6 md:p-8 text-center max-w-md">
-            <div className="text-4xl mb-4">📷</div>
-            <h2 className="text-lg md:text-xl text-primary mb-2">Camera Access Required</h2>
-            <p className="text-muted-foreground text-xs md:text-sm">
-              ValueStream needs camera access to analyze your environment in real-time.
-              Please enable camera permissions and refresh the page.
+          <div className="bg-card rounded-2xl shadow-xl p-8 text-center max-w-md animate-fade-in">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Camera className="w-8 h-8 text-primary" />
+            </div>
+            <h2 className="text-xl font-semibold text-foreground mb-2">Camera Access Required</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              To scan and identify items, we need access to your camera. Please enable camera permissions and refresh.
             </p>
+            <Button onClick={() => window.location.reload()}>
+              Refresh Page
+            </Button>
           </div>
         </div>
       )}
 
-      {/* HUD Overlay */}
-      <HudOverlay />
+      {/* Top Header Bar */}
+      <div className="absolute top-0 left-0 right-0 z-20 p-4">
+        <div className="flex items-center justify-between">
+          <Link to="/dashboard">
+            <Button variant="ghost" size="icon" className="bg-white/90 hover:bg-white shadow-lg">
+              <ArrowLeft className="w-5 h-5 text-foreground" />
+            </Button>
+          </Link>
 
-      {/* Backoff warning */}
-      <BackoffWarning pauseUntil={pauseUntil} reason={backoffReason} />
+          <div className="flex items-center gap-2">
+            {/* Status indicator */}
+            <div className="glass px-3 py-1.5 rounded-full flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${isAnalyzing ? 'bg-primary animate-pulse' : 'bg-green-500'}`} />
+              <span className="text-sm font-medium text-foreground">
+                {isAnalyzing ? 'Scanning...' : 'Ready'}
+              </span>
+            </div>
 
-      {/* Total Value Ticker */}
+            {/* Voice toggle */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="bg-white/90 hover:bg-white shadow-lg"
+              onClick={() => setShowVoiceSettings(true)}
+            >
+              {voiceEnabled ? (
+                <Volume2 className="w-5 h-5 text-primary" />
+              ) : (
+                <VolumeX className="w-5 h-5 text-muted-foreground" />
+              )}
+            </Button>
+
+            {/* Settings */}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="bg-white/90 hover:bg-white shadow-lg"
+              onClick={() => setShowVoiceSettings(true)}
+            >
+              <Settings className="w-5 h-5 text-foreground" />
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Total Value Display */}
       <TotalValueTicker value={totalValue} isAnalyzing={isAnalyzing} />
 
       {/* Bounding boxes */}
@@ -398,25 +455,111 @@ const WebcamView = () => {
         />
       ))}
 
-      {/* Evidence Panel - Desktop positioned, mobile fullscreen */}
-      {showEvidence && (
-        <div className="hidden md:block">
-          <EvidencePanel items={evidenceItems} onClose={() => setShowEvidence(false)} />
-        </div>
-      )}
-      {showEvidence && (
-        <div className="md:hidden fixed inset-0 z-50 bg-background/95">
-          <EvidencePanel items={evidenceItems} onClose={() => setShowEvidence(false)} />
+      {/* Backoff Warning */}
+      {pauseUntil && Date.now() < pauseUntil.getTime() && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-30">
+          <div className="bg-warning/90 text-warning-foreground px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg animate-fade-in">
+            <AlertCircle className="w-4 h-4" />
+            <span className="text-sm font-medium">{backoffReason}</span>
+          </div>
         </div>
       )}
 
-      {/* Truth Log - Hidden on mobile */}
-      <div className="hidden md:block">
+      {/* Bottom Controls */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 p-4 pb-8">
+        <div className="max-w-lg mx-auto">
+          {/* Main Scan Button */}
+          <div className="flex items-center justify-center mb-4">
+            <button
+              onClick={scanNow}
+              disabled={!canScan}
+              className={`
+                w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-all
+                ${canScan 
+                  ? 'bg-primary hover:bg-primary/90 active:scale-95 scan-button-pulse' 
+                  : 'bg-muted cursor-not-allowed'
+                }
+              `}
+            >
+              {isAnalyzing ? (
+                <Loader2 className="w-8 h-8 text-white animate-spin" />
+              ) : (
+                <Camera className="w-8 h-8 text-white" />
+              )}
+            </button>
+          </div>
+
+          {/* Secondary Controls */}
+          <div className="flex items-center justify-center gap-3">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="bg-white/90 hover:bg-white shadow-lg"
+              onClick={() => setShowEvidence(true)}
+            >
+              <Package className="w-4 h-4 mr-2" />
+              Items ({evidenceItems.length})
+            </Button>
+
+            <Button
+              variant="secondary"
+              size="sm"
+              className="bg-white/90 hover:bg-white shadow-lg"
+              onClick={() => setShowNotes(true)}
+            >
+              <StickyNote className="w-4 h-4 mr-2" />
+              Notes
+            </Button>
+
+            {sessionId && (
+              <ShareButton
+                sessionId={sessionId}
+                sessionTitle={sessionTitle}
+                totalValue={totalValue}
+                itemCount={evidenceItems.length}
+              />
+            )}
+
+            <Button
+              variant="secondary"
+              size="sm"
+              className="bg-white/90 hover:bg-white shadow-lg"
+              onClick={() => setShowCollaborators(true)}
+            >
+              <Users className="w-4 h-4" />
+              {connectedUsers.length > 1 && (
+                <span className="ml-1">{connectedUsers.length}</span>
+              )}
+            </Button>
+          </div>
+
+          {/* End Session */}
+          <div className="flex justify-center mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="bg-white/90 hover:bg-white text-destructive border-destructive/30"
+              onClick={handleEndSession}
+            >
+              End Session
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Truth Log - Desktop only */}
+      <div className="hidden lg:block absolute left-4 top-24 bottom-32 w-80 z-10">
         <TruthLog entries={logEntries} />
       </div>
 
-      {/* Analyzing indicator */}
-      <AnalyzingIndicator isActive={isAnalyzing} />
+      {/* Evidence Panel Modal */}
+      {showEvidence && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-end md:items-center justify-center">
+          <div className="bg-background w-full max-w-2xl max-h-[80vh] rounded-t-2xl md:rounded-2xl overflow-hidden animate-slide-in">
+            <EvidencePanel items={evidenceItems} onClose={() => setShowEvidence(false)} />
+          </div>
+        </div>
+      )}
 
       {/* Session Notes Modal */}
       {showNotes && sessionId && (
@@ -435,110 +578,16 @@ const WebcamView = () => {
         />
       )}
 
-      {/* Mobile Controls */}
-      <MobileControls
-        voiceEnabled={voiceEnabled}
-        onToggleVoice={toggleVoice}
-        showEvidence={showEvidence}
-        onToggleEvidence={() => setShowEvidence(!showEvidence)}
-        onShare={handleShare}
-        onCollaborators={() => setShowCollaborators(true)}
-        onNotes={() => setShowNotes(true)}
-        onEndSession={handleEndSession}
-        sessionTitle={sessionTitle}
-        connectedUsers={connectedUsers.length}
-      />
-
-      {/* Desktop Controls */}
-      <div className="hidden md:flex absolute bottom-4 left-4 z-20 items-center gap-3 flex-wrap">
-        <div className="glass px-3 py-2">
-          <div className="text-xs text-muted-foreground">
-            <div>VALUESTREAM v1.0</div>
-            <div className="text-primary">Gemini 3 Vision • 2s Interval</div>
-          </div>
-        </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className={`border-primary/50 hover:bg-primary/10 ${voiceEnabled ? "text-primary" : "text-muted-foreground"}`}
-          onClick={toggleVoice}
-        >
-          {voiceEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-primary/50 text-primary hover:bg-primary/10"
-          onClick={() => setShowEvidence(!showEvidence)}
-        >
-          {showEvidence ? "Hide Evidence" : "Show Evidence"}
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-primary/50 text-primary hover:bg-primary/10"
-          onClick={() => setShowNotes(true)}
-        >
-          <StickyNote size={14} className="mr-1" />
-          Notes
-        </Button>
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-primary/50 text-primary hover:bg-primary/10"
-          onClick={() => setShowCollaborators(true)}
-        >
-          <Users size={14} className="mr-1" />
-          Collaborate
-          {connectedUsers.length > 1 && (
-            <span className="ml-1 text-xs bg-hud-price/20 text-hud-price px-1.5 rounded">
-              {connectedUsers.length}
-            </span>
-          )}
-        </Button>
-
-        {sessionId && (
-          <ShareButton
-            sessionId={sessionId}
-            sessionTitle={sessionTitle}
-            totalValue={totalValue}
-            itemCount={detectedObjects.length}
-          />
-        )}
-
-        <Button
-          variant="outline"
-          size="sm"
-          className="border-destructive/50 text-destructive hover:bg-destructive/10"
-          onClick={handleEndSession}
-        >
-          End Session
-        </Button>
-
-        <Link to="/dashboard">
-          <Button variant="ghost" size="sm" className="text-muted-foreground">
-            Dashboard
-          </Button>
-        </Link>
-      </div>
-
-      {/* Session indicator - Desktop only */}
-      <div className="hidden md:block absolute top-4 left-4 z-20 glass px-3 py-2">
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-hud-price rounded-full animate-pulse" />
-          <span className="text-xs text-primary tracking-wider">RECORDING</span>
-          {connectedUsers.length > 1 && (
-            <span className="text-xs text-hud-price ml-2">
-              {connectedUsers.length} users
-            </span>
-          )}
-        </div>
-        <div className="text-xs text-muted-foreground mt-1">{sessionTitle}</div>
-      </div>
+      {/* Voice Settings Modal */}
+      {showVoiceSettings && (
+        <VoiceSettings
+          selectedVoice={selectedVoice}
+          onSelectVoice={setVoiceId}
+          voiceEnabled={voiceEnabled}
+          onToggleVoice={toggleVoice}
+          onClose={() => setShowVoiceSettings(false)}
+        />
+      )}
     </div>
   );
 };
