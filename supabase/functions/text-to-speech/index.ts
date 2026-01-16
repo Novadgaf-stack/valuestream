@@ -58,9 +58,43 @@ serve(async (req) => {
 
     if (!response.ok) {
       const errorText = await response.text();
+      let parsed: any = null;
+      try {
+        parsed = JSON.parse(errorText);
+      } catch {
+        // ignore
+      }
+
+      const providerStatus = parsed?.detail?.status;
+
+      // ElevenLabs can return a 400 with { detail: { status: "quota_exceeded" } }
+      if (providerStatus === "quota_exceeded") {
+        console.error("ElevenLabs quota exceeded:", errorText);
+        return new Response(
+          JSON.stringify({
+            error: "TTS quota exceeded",
+            code: "quota_exceeded",
+            details: parsed ?? errorText,
+          }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (response.status === 429 || providerStatus === "rate_limited") {
+        console.error("ElevenLabs rate limited:", response.status, errorText);
+        return new Response(
+          JSON.stringify({
+            error: "TTS rate limited",
+            code: "rate_limited",
+            details: parsed ?? errorText,
+          }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       console.error("ElevenLabs TTS error:", response.status, errorText);
       return new Response(
-        JSON.stringify({ error: "TTS generation failed", details: errorText }),
+        JSON.stringify({ error: "TTS generation failed", details: parsed ?? errorText }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

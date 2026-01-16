@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X, Volume2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export type VoiceOption = {
   id: string;
@@ -50,31 +51,43 @@ export const VoiceSettings = ({
   const testVoice = async (voiceId: string) => {
     setTestingVoice(voiceId);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            text: "This is a sample of the selected voice.",
-            voiceId,
-          }),
-        }
-      );
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/text-to-speech`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          text: "This is a sample of the selected voice.",
+          voiceId,
+        }),
+      });
 
-      if (response.ok) {
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        const audio = new Audio(audioUrl);
-        audio.onended = () => URL.revokeObjectURL(audioUrl);
-        await audio.play();
+      if (!response.ok) {
+        let err: any = null;
+        try {
+          err = await response.json();
+        } catch {
+          // ignore
+        }
+
+        if (response.status === 402 && err?.code === "quota_exceeded") {
+          toast.error("Voice credits exhausted — test will use device voice during scanning.");
+        } else {
+          toast.error("Voice test failed. Try again.");
+        }
+        return;
       }
+
+      const audioBlob = await response.blob();
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      audio.onended = () => URL.revokeObjectURL(audioUrl);
+      await audio.play();
     } catch (err) {
       console.error("Failed to test voice:", err);
+      toast.error("Voice test failed. Try again.");
     } finally {
       setTestingVoice(null);
     }
