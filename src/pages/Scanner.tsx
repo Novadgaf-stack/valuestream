@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import HiveMindScanner from "@/components/HiveMindScanner";
+import WebcamView from "@/components/WebcamView";
 
 const Scanner = () => {
   const { user, loading } = useAuth();
@@ -15,8 +15,8 @@ const Scanner = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-cyan-400 animate-pulse font-mono">INITIALIZING NEURAL LINK...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-primary animate-pulse">Initializing scanner...</div>
       </div>
     );
   }
@@ -25,7 +25,7 @@ const Scanner = () => {
     return null;
   }
 
-  return <HiveMindScanner />;
+  return <WebcamView />;
 };
 
 export default Scanner;
