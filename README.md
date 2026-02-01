@@ -1,73 +1,71 @@
-# Welcome to your Lovable project
+# 🌍 MarketForce: The Multi-Agent Reality Auditor
 
-## Project info
+![MarketForce Hero](https://github.com/user-attachments/assets/PLACEHOLDER-FOR-YOUR-HUD-SCREENSHOT)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+> **Digitizing trust for the next billion users.** > A PWA that transforms any smartphone into an enterprise-grade appraisal tool using a **Gemini 3 "Hive Mind"**.
 
-## How can I edit this code?
+[![Live Demo](https://img.shields.io/badge/Demo-Live%20App-blue?style=for-the-badge&logo=vercel)](https://real-time-appraiser.vercel.app/)
+[![Video Demo](https://img.shields.io/badge/Video-Watch%20Demo-red?style=for-the-badge&logo=youtube)](YOUR-YOUTUBE-LINK)
+[![Gemini 3](https://img.shields.io/badge/AI-Gemini%203-purple?style=for-the-badge&logo=google-gemini)](https://deepmind.google/technologies/gemini/)
 
-There are several ways of editing your application.
+---
 
-**Use Lovable**
+## 💡 The Problem
+In emerging markets like **Nigeria**, millions of merchants possess valuable physical inventory but lack the documented credit history to access capital. Banks can't "see" what they own, so they can't lend.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+**The Result:** A $5.2 Trillion global credit gap for MSMEs.
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🚀 The Solution
+**MarketForce** is an Edge-Native PWA that audits physical assets in real-time. Instead of a single AI "guessing" a price, we engineered a **Multi-Agent Consensus Engine** that simulates a human expert panel.
 
-**Use your preferred IDE**
+### 🧠 The "Hive Mind" Architecture
+When you scan an object, we spawn **three parallel Gemini 1.5 Flash agents** on the Edge that debate its value live:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+| Agent | Role | Persona |
+| :--- | :--- | :--- |
+| 🔴 **The Bear** | **Risk Analyst** | Pessimistic. Scans for damage, wear, scratches, and depreciation. |
+| 🟢 **The Bull** | **Market Speculator** | Optimistic. Identifies brand value, vintage appeal, and utility. |
+| 🟡 **The Judge** | **Final Arbiter** | Synthesizes the debate into a final, volatility-adjusted market value. |
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## ✨ Key Features
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 1. 🎥 Cinematic "Boot Sequence"
+We ditched standard login screens for a **sci-fi initialization sequence** that builds trust and hides the camera permission request behind a narrative interaction.
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 2. ⚡ Real-Time "Edge" Reasoning
+Powered by **Supabase Edge Functions** and **Gemini 1.5 Flash**, our vision pipeline runs at **<200ms latency**. We handle race conditions using `AbortController` logic to cancel stale reasoning streams instantly when the camera moves.
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 3. 🌐 Grounded in Reality (Firecrawl)
+We don't just hallucinate prices. The agents use **Firecrawl** to perform live web searches (eBay, Amazon, Poshmark) during the scan to ground their valuations in real-time market data.
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### 4. 📱 PWA & Offline First
+Built for Lagos, not just London. MarketForce is an installable PWA that works on low-end Android devices and caches audit reports for offline access.
 
-**Edit a file directly in GitHub**
+---
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🛠️ Tech Stack
 
-**Use GitHub Codespaces**
+* **AI Model:** Google Gemini 1.5 Flash (via Gemini 3 API)
+* **Frontend:** React, Vite, Tailwind CSS, Framer Motion
+* **Backend:** Supabase (Edge Functions, Realtime, Database)
+* **Search Grounding:** Firecrawl API
+* **Deployment:** Vercel
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## 📸 Architecture Diagram
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```mermaid
+graph TD
+    User[📱 Mobile Camera] -->|Frame Stream| Edge[⚡ Supabase Edge Function]
+    Edge -->|Parallel Request| Gemini1[🔴 Bear Agent]
+    Edge -->|Parallel Request| Gemini2[🟢 Bull Agent]
+    Edge -->|Parallel Request| Gemini3[🟡 Judge Agent]
+    
+    Gemini1 & Gemini2 -->|Debate Stream| UI[🖥️ HUD Interface]
+    Gemini3 -->|Final Price| UI
+    
+    UI -->|Audit Stream| DB[(Supabase Realtime)]
+    DB -->|Live View| LoanOfficer[🏦 Remote Banker]
