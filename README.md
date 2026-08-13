@@ -1,71 +1,72 @@
-# 🌍 VisionStream: The Multi-Agent Reality Auditor
+# ValueStream — AI-Powered Asset Valuation
 
-![MarketForce Hero](https://github.com/user-attachments/assets/PLACEHOLDER-FOR-YOUR-HUD-SCREENSHOT)
+> Turn your camera into an intelligent asset valuation tool. ValueStream uses AI-powered visual analysis to identify physical items, estimate their value, capture evidence, and organize everything into auditable sessions.
 
-> **Digitizing trust for the next billion users.** > A PWA that transforms any smartphone into an enterprise-grade appraisal tool using a **Gemini 3 "Hive Mind"**.
-
-[![Live Demo](https://img.shields.io/badge/Demo-Live%20App-blue?style=for-the-badge&logo=vercel)](https://real-time-appraiser.vercel.app/)
-[![Video Demo](https://img.shields.io/badge/Video-Watch%20Demo-red?style=for-the-badge&logo=youtube)](YOUR-YOUTUBE-LINK)
-[![Gemini 3](https://img.shields.io/badge/AI-Gemini%203-purple?style=for-the-badge&logo=google-gemini)](https://deepmind.google/technologies/gemini/)
-
----
-
-## 💡 The Problem
-In emerging markets like **Nigeria**, millions of merchants possess valuable physical inventory but lack the documented credit history to access capital. Banks can't "see" what they own, so they can't lend.
-
-**The Result:** A $5.2 Trillion global credit gap for MSMEs.
-
-## 🚀 The Solution
-**MarketForce** is an Edge-Native PWA that audits physical assets in real-time. Instead of a single AI "guessing" a price, we engineered a **Multi-Agent Consensus Engine** that simulates a human expert panel.
-
-### 🧠 The "Hive Mind" Architecture
-When you scan an object, we spawn **three parallel Gemini 1.5 Flash agents** on the Edge that debate its value live:
-
-| Agent | Role | Persona |
-| :--- | :--- | :--- |
-| 🔴 **The Bear** | **Risk Analyst** | Pessimistic. Scans for damage, wear, scratches, and depreciation. |
-| 🟢 **The Bull** | **Market Speculator** | Optimistic. Identifies brand value, vintage appeal, and utility. |
-| 🟡 **The Judge** | **Final Arbiter** | Synthesizes the debate into a final, volatility-adjusted market value. |
+[![Live Demo](https://img.shields.io/badge/Live-Demo-7A1F3D?style=for-the-badge&logo=vercel&logoColor=white)](https://valuestream-eta.vercel.app/)
+[![React](https://img.shields.io/badge/React-18-060B18?style=for-the-badge&logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-060B18?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Backend-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vitejs.dev/)
 
 ---
 
-## ✨ Key Features
+## Overview
 
-### 1. 🎥 Cinematic "Boot Sequence"
-We ditched standard login screens for a **sci-fi initialization sequence** that builds trust and hides the camera permission request behind a narrative interaction.
+ValueStream is a full-stack AI valuation application designed to make physical asset appraisal faster, more accessible, and easier to document.
 
-### 2. ⚡ Real-Time "Edge" Reasoning
-Powered by **Supabase Edge Functions** and **Gemini 1.5 Flash**, our vision pipeline runs at **<200ms latency**. We handle race conditions using `AbortController` logic to cancel stale reasoning streams instantly when the camera moves.
+Instead of manually researching every object, users can open the scanner, point their camera at an item, and let the application analyze the scene.
 
-### 3. 🌐 Grounded in Reality (Firecrawl)
-We don't just hallucinate prices. The agents use **Firecrawl** to perform live web searches (eBay, Amazon, Poshmark) during the scan to ground their valuations in real-time market data.
+The resulting valuation is presented through an interactive scanner interface with:
 
-### 4. 📱 PWA & Offline First
-Built for Lagos, not just London. MarketForce is an installable PWA that works on low-end Android devices and caches audit reports for offline access.
+- Detected objects
+- Estimated values
+- Confidence scores
+- Bounding boxes
+- Condition information
+- Evidence snapshots
+- Session history
+- Notes
+- Voice narration
+- Real-time collaboration
 
----
-
-## 🛠️ Tech Stack
-
-* **AI Model:** Google Gemini 1.5 Flash (via Gemini 3 API)
-* **Frontend:** React, Vite, Tailwind CSS, Framer Motion
-* **Backend:** Supabase (Edge Functions, Realtime, Database)
-* **Search Grounding:** Firecrawl API
-* **Deployment:** Vercel
+ValueStream is built as a Progressive Web App, making the experience accessible across desktop and mobile devices.
 
 ---
 
-## 📸 Architecture Diagram
+## The Problem
 
-```mermaid
-graph TD
-    User[📱 Mobile Camera] -->|Frame Stream| Edge[⚡ Supabase Edge Function]
-    Edge -->|Parallel Request| Gemini1[🔴 Bear Agent]
-    Edge -->|Parallel Request| Gemini2[🟢 Bull Agent]
-    Edge -->|Parallel Request| Gemini3[🟡 Judge Agent]
-    
-    Gemini1 & Gemini2 -->|Debate Stream| UI[🖥️ HUD Interface]
-    Gemini3 -->|Final Price| UI
-    
-    UI -->|Audit Stream| DB[(Supabase Realtime)]
-    DB -->|Live View| LoanOfficer[🏦 Remote Banker]
+Valuing physical assets manually can be slow and inconsistent.
+
+A user may need to:
+
+1. Identify an unknown object.
+2. Research the product or category.
+3. Determine its approximate market value.
+4. Evaluate its condition.
+5. Document the result.
+6. Preserve evidence of the valuation.
+
+This becomes especially difficult when dealing with multiple items or when an appraisal needs to be shared with other people.
+
+ValueStream combines these steps into one camera-first workflow.
+
+---
+
+## The Solution
+
+ValueStream turns a camera feed into an interactive valuation workspace.
+
+```text
+Camera
+   ↓
+AI Analysis
+   ↓
+Object Detection
+   ↓
+Value Estimation
+   ↓
+Evidence Capture
+   ↓
+Audit Session
+   ↓
+Dashboard / Collaboration
