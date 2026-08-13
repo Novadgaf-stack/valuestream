@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState } from "react";
+﻿import { useRef, useCallback, useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Webcam from "react-webcam";
 import TotalValueTicker from "./TotalValueTicker";
@@ -14,12 +14,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { useVoiceNarration } from "@/hooks/useVoiceNarration";
 import { useRealtimeSession } from "@/hooks/useRealtimeSession";
 import { Button } from "@/components/ui/button";
-import { 
-  Camera, 
-  Volume2, 
-  VolumeX, 
-  Users, 
-  StickyNote, 
+import {
+  Camera,
+  Volume2,
+  VolumeX,
+  Users,
+  StickyNote,
   Settings,
   Package,
   ArrowLeft,
@@ -34,16 +34,17 @@ const BACKOFF_MAX = 15000;
 const WebcamView = () => {
   const webcamRef = useRef<Webcam>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const sessionIdRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { 
-    announceDetection, 
+
+  const {
+    announceDetection,
     speak,
-    toggleVoice, 
-    voiceEnabled, 
-    selectedVoice, 
-    setVoiceId 
+    toggleVoice,
+    voiceEnabled,
+    selectedVoice,
+    setVoiceId
   } = useVoiceNarration();
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -67,29 +68,38 @@ const WebcamView = () => {
 
   const { connectedUsers } = useRealtimeSession(sessionId);
 
-  const addLog = useCallback((type: LogEntry["type"], message: string, value?: number) => {
-    const entry: LogEntry = {
-      id: crypto.randomUUID(),
-      type,
-      message,
-      timestamp: new Date(),
-      value,
-    };
-    setLogEntries((prev) => [...prev.slice(-50), entry]);
-  }, []);
+  const addLog = useCallback(
+    (type: LogEntry["type"], message: string, value?: number) => {
+      const entry: LogEntry = {
+        id: crypto.randomUUID(),
+        type,
+        message,
+        timestamp: new Date(),
+        value,
+      };
+      setLogEntries((prev) => [...prev.slice(-50), entry]);
+    },
+    []
+  );
 
-  // Speak single item (for tap-to-speak)
-  const speakItem = useCallback((name: string, value: number) => {
-    speak(`${name}, $${value.toLocaleString()}`);
-  }, [speak]);
+  const speakItem = useCallback(
+    (name: string, value: number) => {
+      speak(`${name}, $${value.toLocaleString()}`);
+    },
+    [speak]
+  );
 
-  // Handle bounding box tap
-  const handleBoundingBoxTap = useCallback((item: DetectedObject) => {
-    speakItem(item.object, item.value);
-  }, [speakItem]);
+  const handleBoundingBoxTap = useCallback(
+    (item: DetectedObject) => {
+      speakItem(item.object, item.value);
+    },
+    [speakItem]
+  );
 
   useEffect(() => {
     if (!user) return;
+
+    let cancelled = false;
 
     const createSession = async () => {
       const { data, error } = await supabase
@@ -101,25 +111,49 @@ const WebcamView = () => {
         .select()
         .single();
 
+      if (cancelled) {
+        if (data?.id) {
+          await supabase
+            .from("audit_sessions")
+            .update({
+              is_active: false,
+              ended_at: new Date().toISOString(),
+            })
+            .eq("id", data.id);
+        }
+        return;
+      }
+
       if (error) {
         console.error("Failed to create session:", error);
         addLog("error", "Failed to initialize session");
-      } else {
-        setSessionId(data.id);
-        setSessionTitle(data.title);
-        addLog("system", "Session started. Tap Scan to analyze.");
+        return;
       }
+
+      sessionIdRef.current = data.id;
+      setSessionId(data.id);
+      setSessionTitle(data.title);
+      addLog("system", "Session started. Tap Scan to analyze.");
     };
 
     createSession();
 
     return () => {
-      if (sessionId) {
+      cancelled = true;
+
+      const activeSessionId = sessionIdRef.current;
+
+      if (activeSessionId) {
         supabase
           .from("audit_sessions")
-          .update({ is_active: false, ended_at: new Date().toISOString() })
-          .eq("id", sessionId)
-          .then(() => {});
+          .update({
+            is_active: false,
+            ended_at: new Date().toISOString(),
+          })
+          .eq("id", activeSessionId)
+          .then(() => {
+            sessionIdRef.current = null;
+          });
       }
     };
   }, [user, addLog]);
@@ -128,9 +162,11 @@ const WebcamView = () => {
     (imageSrc: string, obj: DetectedObject): Promise<string> => {
       return new Promise((resolve) => {
         const img = new Image();
+
         img.onload = () => {
           const canvas = document.createElement("canvas");
           const ctx = canvas.getContext("2d");
+
           if (!ctx) {
             resolve("");
             return;
@@ -143,9 +179,22 @@ const WebcamView = () => {
 
           canvas.width = Math.max(w, 50);
           canvas.height = Math.max(h, 50);
-          ctx.drawImage(img, x, y, w, h, 0, 0, canvas.width, canvas.height);
+
+          ctx.drawImage(
+            img,
+            x,
+            y,
+            w,
+            h,
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+
           resolve(canvas.toDataURL("image/jpeg", 0.7));
         };
+
         img.src = imageSrc;
       });
     },
@@ -156,12 +205,15 @@ const WebcamView = () => {
     if (!webcamRef.current || isAnalyzing || !sessionId) return;
 
     if (pauseUntil && Date.now() < pauseUntil.getTime()) {
-      const remaining = Math.ceil((pauseUntil.getTime() - Date.now()) / 1000);
+      const remaining = Math.ceil(
+        (pauseUntil.getTime() - Date.now()) / 1000
+      );
       toast.error(`Please wait ${remaining}s before scanning again`);
       return;
     }
 
     const imageSrc = webcamRef.current.getScreenshot();
+
     if (!imageSrc) {
       toast.error("Unable to capture image");
       return;
@@ -173,25 +225,31 @@ const WebcamView = () => {
     try {
       const base64Data = imageSrc.split(",")[1];
 
-      const { data, error } = await supabase.functions.invoke("analyze-frame", {
-        body: { image: base64Data },
-      });
+      const { data, error } = await supabase.functions.invoke(
+        "analyze-frame",
+        {
+          body: { image: base64Data },
+        }
+      );
 
       if (error) {
         console.error("Edge function error:", error);
         addLog("error", `Analysis failed: ${error.message}`);
         toast.error("Analysis failed. Try again.");
 
-        const backoffTime = BACKOFF_MIN + Math.random() * (BACKOFF_MAX - BACKOFF_MIN);
+        const backoffTime =
+          BACKOFF_MIN + Math.random() * (BACKOFF_MAX - BACKOFF_MIN);
+
         setPauseUntil(new Date(Date.now() + backoffTime));
         setBackoffReason("Cooling down");
-
         setIsAnalyzing(false);
         return;
       }
 
       if (data?.error && (data.status === 429 || data.status === 502)) {
-        const backoffTime = BACKOFF_MIN + Math.random() * (BACKOFF_MAX - BACKOFF_MIN);
+        const backoffTime =
+          BACKOFF_MIN + Math.random() * (BACKOFF_MAX - BACKOFF_MIN);
+
         setPauseUntil(new Date(Date.now() + backoffTime));
         setBackoffReason("Rate limited");
         addLog("error", "Rate limit reached");
@@ -200,28 +258,45 @@ const WebcamView = () => {
         return;
       }
 
-      if (data?.objects && Array.isArray(data.objects) && data.objects.length > 0) {
-        const newObjects: DetectedObject[] = data.objects.map((obj: any, index: number) => ({
-          id: crypto.randomUUID(),
-          object: obj.object || "Unknown",
-          value: obj.value || 0,
-          confidence: obj.confidence || 0.5,
-          x: obj.bbox?.[0] ?? obj.coordinates?.[0] ?? 20 + (index * 15) % 60,
-          y: obj.bbox?.[1] ?? obj.coordinates?.[1] ?? 20 + (index * 10) % 40,
-          w: obj.bbox?.[2] ?? 15,
-          h: obj.bbox?.[3] ?? 12,
-          isDamaged: obj.damaged || false,
-        }));
+      if (
+        data?.objects &&
+        Array.isArray(data.objects) &&
+        data.objects.length > 0
+      ) {
+        const newObjects: DetectedObject[] = data.objects.map(
+          (obj: any, index: number) => ({
+            id: crypto.randomUUID(),
+            object: obj.object || "Unknown",
+            value: obj.value || 0,
+            confidence: obj.confidence || 0.5,
+            x:
+              obj.bbox?.[0] ??
+              obj.coordinates?.[0] ??
+              20 + ((index * 15) % 60),
+            y:
+              obj.bbox?.[1] ??
+              obj.coordinates?.[1] ??
+              20 + ((index * 10) % 40),
+            w: obj.bbox?.[2] ?? 15,
+            h: obj.bbox?.[3] ?? 12,
+            isDamaged: obj.damaged || false,
+          })
+        );
 
         setDetectedObjects(newObjects);
 
-        const total = newObjects.reduce((sum, obj) => sum + obj.value, 0);
+        const total = newObjects.reduce(
+          (sum, obj) => sum + obj.value,
+          0
+        );
+
         setTotalValue((prev) => prev + total);
 
         for (const obj of newObjects) {
           addLog("detection", `${obj.object}`, obj.value);
+
           if (obj.isDamaged) {
-            addLog("deduction", `Condition: Worn/Damaged`);
+            addLog("deduction", "Condition: Worn/Damaged");
           }
 
           await supabase.from("detected_items").insert({
@@ -237,8 +312,12 @@ const WebcamView = () => {
           });
 
           const snapshot = await cropObject(imageSrc, obj);
+
           setEvidenceItems((prev) => {
-            const existing = prev.find((e) => e.objectName === obj.object);
+            const existing = prev.find(
+              (e) => e.objectName === obj.object
+            );
+
             if (existing) {
               return prev.map((e) =>
                 e.objectName === obj.object
@@ -246,11 +325,15 @@ const WebcamView = () => {
                       ...e,
                       value: obj.value,
                       confidence: obj.confidence,
-                      confidenceHistory: [...e.confidenceHistory.slice(-9), obj.confidence],
+                      confidenceHistory: [
+                        ...e.confidenceHistory.slice(-9),
+                        obj.confidence,
+                      ],
                     }
                   : e
               );
             }
+
             return [
               ...prev,
               {
@@ -267,11 +350,12 @@ const WebcamView = () => {
         }
 
         const newTotal = totalValue + total;
+
         await supabase
           .from("audit_sessions")
-          .update({ 
-            total_value: newTotal, 
-            item_count: evidenceItems.length + newObjects.length 
+          .update({
+            total_value: newTotal,
+            item_count: evidenceItems.length + newObjects.length,
           })
           .eq("id", sessionId);
 
@@ -281,25 +365,50 @@ const WebcamView = () => {
           item_count: evidenceItems.length + newObjects.length,
         });
 
-        toast.success(`Found ${newObjects.length} item${newObjects.length > 1 ? 's' : ''}`);
-        addLog("system", `Found ${newObjects.length} item${newObjects.length > 1 ? 's' : ''}`);
+        toast.success(
+          `Found ${newObjects.length} item${
+            newObjects.length > 1 ? "s" : ""
+          }`
+        );
+
+        addLog(
+          "system",
+          `Found ${newObjects.length} item${
+            newObjects.length > 1 ? "s" : ""
+          }`
+        );
       } else {
-        toast.info("No items detected. Try pointing at specific objects.");
+        toast.info(
+          "No items detected. Try pointing at specific objects."
+        );
         addLog("system", "No items detected in frame.");
         setDetectedObjects([]);
       }
     } catch (err) {
       console.error("Analysis error:", err);
-      addLog("error", `Error: ${err instanceof Error ? err.message : "Unknown"}`);
+      addLog(
+        "error",
+        `Error: ${err instanceof Error ? err.message : "Unknown"}`
+      );
       toast.error("Something went wrong. Try again.");
 
-      const backoffTime = BACKOFF_MIN + Math.random() * (BACKOFF_MAX - BACKOFF_MIN);
+      const backoffTime =
+        BACKOFF_MIN + Math.random() * (BACKOFF_MAX - BACKOFF_MIN);
+
       setPauseUntil(new Date(Date.now() + backoffTime));
       setBackoffReason("Error recovery");
     }
 
     setIsAnalyzing(false);
-  }, [isAnalyzing, addLog, sessionId, pauseUntil, cropObject, totalValue, evidenceItems.length]);
+  }, [
+    isAnalyzing,
+    addLog,
+    sessionId,
+    pauseUntil,
+    cropObject,
+    totalValue,
+    evidenceItems.length,
+  ]);
 
   useEffect(() => {
     const updateSize = () => {
@@ -313,6 +422,7 @@ const WebcamView = () => {
 
     updateSize();
     window.addEventListener("resize", updateSize);
+
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
@@ -333,24 +443,30 @@ const WebcamView = () => {
     if (sessionId) {
       await supabase
         .from("audit_sessions")
-        .update({ 
-          is_active: false, 
+        .update({
+          is_active: false,
           ended_at: new Date().toISOString(),
           total_value: totalValue,
-          item_count: evidenceItems.length
+          item_count: evidenceItems.length,
         })
         .eq("id", sessionId);
+
       toast.success("Session saved");
     }
+
     navigate("/dashboard");
   };
 
-  const canScan = hasPermission && !isAnalyzing && !(pauseUntil && Date.now() < pauseUntil.getTime());
+  const canScan =
+    hasPermission &&
+    !isAnalyzing &&
+    !(pauseUntil && Date.now() < pauseUntil.getTime());
 
   return (
-    <div ref={containerRef} className="relative w-full h-screen bg-background overflow-hidden">
-      <canvas ref={canvasRef} className="hidden" />
-
+    <div
+      ref={containerRef}
+      className="relative w-full h-screen bg-background overflow-hidden"
+    >
       <Webcam
         ref={webcamRef}
         audio={false}
@@ -366,20 +482,23 @@ const WebcamView = () => {
         onUserMediaError={handleUserMediaError}
       />
 
-      {/* Gradient overlay */}
       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20 pointer-events-none" />
 
-      {/* Permission denied */}
       {hasPermission === false && (
         <div className="absolute inset-0 flex items-center justify-center bg-background z-50 p-4">
           <div className="glass-premium rounded-2xl p-8 text-center max-w-md animate-fade-in">
             <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <Camera className="w-8 h-8 text-primary" />
             </div>
-            <h2 className="text-xl font-semibold text-foreground mb-2">Camera Access Required</h2>
+
+            <h2 className="text-xl font-semibold text-foreground mb-2">
+              Camera Access Required
+            </h2>
+
             <p className="text-muted-foreground text-sm mb-6">
               To scan and identify items, we need access to your camera.
             </p>
+
             <Button onClick={() => window.location.reload()}>
               Refresh Page
             </Button>
@@ -387,26 +506,36 @@ const WebcamView = () => {
         </div>
       )}
 
-      {/* Top Header */}
       <div className="absolute top-0 left-0 right-0 z-20 p-4">
         <div className="flex items-center justify-between">
           <Link to="/dashboard">
-            <Button variant="ghost" size="icon" className="glass-premium rounded-full">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="glass-premium rounded-full"
+            >
               <ArrowLeft className="w-5 h-5 text-foreground" />
             </Button>
           </Link>
 
           <div className="flex items-center gap-2">
             <div className="glass-premium px-3 py-1.5 rounded-full flex items-center gap-2">
-              <div className={`w-2 h-2 rounded-full ${isAnalyzing ? 'bg-primary animate-pulse' : 'bg-green-500'}`} />
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  isAnalyzing
+                    ? "bg-primary animate-pulse"
+                    : "bg-green-500"
+                }`}
+              />
+
               <span className="text-sm font-medium text-foreground">
-                {isAnalyzing ? 'Scanning...' : 'Ready'}
+                {isAnalyzing ? "Scanning..." : "Ready"}
               </span>
             </div>
 
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="glass-premium rounded-full"
               onClick={toggleVoice}
             >
@@ -417,9 +546,9 @@ const WebcamView = () => {
               )}
             </Button>
 
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               className="glass-premium rounded-full"
               onClick={() => setShowVoiceSettings(true)}
             >
@@ -429,10 +558,11 @@ const WebcamView = () => {
         </div>
       </div>
 
-      {/* Total Value */}
-      <TotalValueTicker value={totalValue} isAnalyzing={isAnalyzing} />
+      <TotalValueTicker
+        value={totalValue}
+        isAnalyzing={isAnalyzing}
+      />
 
-      {/* Bounding boxes - tap to speak */}
       {detectedObjects.map((item) => (
         <BoundingBox
           key={item.id}
@@ -443,29 +573,29 @@ const WebcamView = () => {
         />
       ))}
 
-      {/* Backoff Warning */}
       {pauseUntil && Date.now() < pauseUntil.getTime() && (
         <div className="absolute top-24 left-1/2 -translate-x-1/2 z-30">
           <div className="glass-premium bg-amber-500/10 border-amber-500/30 px-4 py-2 rounded-full flex items-center gap-2 animate-fade-in">
             <AlertCircle className="w-4 h-4 text-amber-500" />
-            <span className="text-sm font-medium text-amber-600 dark:text-amber-400">{backoffReason}</span>
+            <span className="text-sm font-medium text-amber-600 dark:text-amber-400">
+              {backoffReason}
+            </span>
           </div>
         </div>
       )}
 
-      {/* Bottom Controls */}
       <div className="absolute bottom-0 left-0 right-0 z-20 p-4 pb-8">
         <div className="max-w-lg mx-auto">
-          {/* Main Scan Button */}
           <div className="flex items-center justify-center mb-4">
             <button
               onClick={scanNow}
               disabled={!canScan}
               className={`
                 w-20 h-20 rounded-full flex items-center justify-center shadow-2xl transition-all
-                ${canScan 
-                  ? 'bg-primary hover:bg-primary/90 active:scale-95 scan-button-pulse' 
-                  : 'bg-muted cursor-not-allowed'
+                ${
+                  canScan
+                    ? "bg-primary hover:bg-primary/90 active:scale-95 scan-button-pulse"
+                    : "bg-muted cursor-not-allowed"
                 }
               `}
             >
@@ -477,7 +607,6 @@ const WebcamView = () => {
             </button>
           </div>
 
-          {/* Secondary Controls */}
           <div className="flex items-center justify-center gap-3">
             <Button
               variant="secondary"
@@ -521,7 +650,6 @@ const WebcamView = () => {
             </Button>
           </div>
 
-          {/* End Session */}
           <div className="flex justify-center mt-4">
             <Button
               variant="outline"
@@ -535,17 +663,15 @@ const WebcamView = () => {
         </div>
       </div>
 
-      {/* Truth Log - Desktop */}
       <div className="hidden lg:block absolute left-4 top-24 bottom-32 w-80 z-10">
         <TruthLog entries={logEntries} />
       </div>
 
-      {/* Evidence Panel Modal */}
       {showEvidence && (
         <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-end md:items-center justify-center">
           <div className="bg-card w-full max-w-2xl max-h-[80vh] rounded-t-2xl md:rounded-2xl overflow-hidden animate-slide-up">
-            <EvidencePanel 
-              items={evidenceItems} 
+            <EvidencePanel
+              items={evidenceItems}
               onClose={() => setShowEvidence(false)}
               onSpeakItem={speakItem}
             />
@@ -553,7 +679,6 @@ const WebcamView = () => {
         </div>
       )}
 
-      {/* Session Notes Modal */}
       {showNotes && sessionId && (
         <SessionNotes
           sessionId={sessionId}
@@ -561,7 +686,6 @@ const WebcamView = () => {
         />
       )}
 
-      {/* Collaborator Panel Modal */}
       {showCollaborators && sessionId && (
         <CollaboratorPanel
           sessionId={sessionId}
@@ -570,7 +694,6 @@ const WebcamView = () => {
         />
       )}
 
-      {/* Voice Settings Modal */}
       {showVoiceSettings && (
         <VoiceSettings
           selectedVoice={selectedVoice}
